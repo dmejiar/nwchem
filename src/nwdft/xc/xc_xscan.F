@@ -287,11 +287,11 @@ c     functional derivatives FFFFFFFFFFFFFFFFFFFFFFFFFFFF
             if (whichfx.eq.'orig') then
               dadg = -F18*rrho/tauU
               dadt = 1d0/tauU
-              dadr = F13*(8d0*tauW - 5.0*tauN)*rrho/tauU
+              dadr = f53*(p - a)*rrho
             else if (whichfx.eq.'regu') then
               dadg = -F18*rrho/(tauU + 1d-4*facttwo**f53)
               dadt = 1d0/(tauU + 1d-4*facttwo**f53)
-              dadr = 5d0/3d0*(p - a)*tauU*rrho/(tauU +1d-4*facttwo**f53)
+              dadr = f53*(p - a)*tauU*rrho/(tauU +1d-4*facttwo**f53)
             endif
 
             if (p14.lt.0.001d0) then
