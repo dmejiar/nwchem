@@ -143,7 +143,7 @@ c     zzz(3,nnia,mbf)=dchi(q,3,nnia)* cc(q,mbf)
      D                       delchi(1,1,inizia),nq,
      C                       ccrap(1,1,ispin), nq, 1.d0,zzz,3*nnia)
                      endif
-                      if (kske)then
+                      if (kske.and.(maxval(Mmat(:nq,ispin)).ge.0d0))then
                          do mu = inizia,ifinia
                             mu1=mu-inizia+1
                             do nu = 1, mbf_ao
@@ -184,21 +184,21 @@ c     zzz(1,mu,nu)
                                z2 = 0.d0
                                z3 = 0.d0
                                do n = 1, nq
-                                  z1 = z1 + (2d0*
+                                  z1 = z1 + (
      A                                 (delchi(n,1,nu)*heschi(n,1,mu) +
      &                                 delchi(n,2,nu)*heschi(n,2,mu) +
      &                                 delchi(n,3,nu)*heschi(n,3,mu)) +
      &                                 (heschi(n,1,nu)+heschi(n,4,nu) +
      &                                  heschi(n,6,nu))*delchi(n,1,mu))
      &                                 *Lmat(n,ispin)
-                                  z2 = z2 + (2d0*
+                                  z2 = z2 + (
      A                                 (delchi(n,1,nu)*heschi(n,2,mu) +
      &                                 delchi(n,2,nu)*heschi(n,4,mu) +
      &                                 delchi(n,3,nu)*heschi(n,5,mu)) +
      &                                 (heschi(n,1,nu)+heschi(n,4,nu) +
      &                                  heschi(n,6,nu))*delchi(n,2,mu))
      &                                 *Lmat(n,ispin)
-                                  z3 = z3 + (2d0*
+                                  z3 = z3 + (
      A                                 (delchi(n,1,nu)*heschi(n,3,mu) +
      &                                 delchi(n,2,nu)*heschi(n,5,mu) +
      &                                 delchi(n,3,nu)*heschi(n,6,mu)) +
@@ -209,9 +209,9 @@ c     zzz(1,mu,nu)
 c     zzz(3,nnia,mbf)
 c     zzz(1,mu,nu)
                                zzzptr=1+(mu1-1)*3+(nu-1)*3*nnia
-                               zzz(zzzptr)   = zzz(zzzptr)   + z1
-                               zzz(zzzptr+1) = zzz(zzzptr+1) + z2
-                               zzz(zzzptr+2) = zzz(zzzptr+2) + z3
+                               zzz(zzzptr)   = zzz(zzzptr)   + 2d0*z1
+                               zzz(zzzptr+1) = zzz(zzzptr+1) + 2d0*z2
+                               zzz(zzzptr+2) = zzz(zzzptr+2) + 2d0*z3
                             enddo
                          enddo
                       endif

@@ -99,9 +99,10 @@ c
       integer ifinia, ifinja
       integer jat, inizja, jfirst, jlast, nbfja, nnja
       integer iatcur, jatcur
+      integer ixyz
       double precision FUNC_MAX, DELFUNC_MAX, FUNC_MAXI, FUNC_MAXJ
       double precision P_MAXJ, P_MAXJ_A, P_MAXJ_B, P_MAXIJ
-      double precision dabsmax
+      double precision dabsmax, wtemp, tol_temp
       integer g_keepd(2)
       integer nbhandl
       integer jj
@@ -171,6 +172,7 @@ c     Dij is screened on desired accuracy/max(|Xi(r)|)*max(|Xj(r)|)
 c
       i0=ipol-1
 c
+      tol_temp = tol_rho*0.01d0
       FUNC_MAX = dabsmax(natoms,rchi_atom)
       DELFUNC_MAX=0d0
       if(grad) DELFUNC_MAX = dabsmax(natoms,rdelchi_atom)
@@ -218,13 +220,17 @@ c
 c        screening parameters
 c
          FUNC_MAXI = rchi_atom(iat)
-         if(grad)
-     .     FUNC_MAXI = max(FUNC_MAXI,rdelchi_atom(iat))
-         FUNC_MAXJ = max(FUNC_MAX,DELFUNC_MAX)
+         FUNC_MAXJ = FUNC_MAX
          if(what.lt.2) then
             if (ipol.gt.1)then
-              P_MAXJ_A = dabsmax(natoms,rdens_atom(1,iat,1))
-              P_MAXJ_B = dabsmax(natoms,rdens_atom(1,iat,2))
+              P_MAXJ_A = 0d0
+              P_MAXJ_B = 0d0
+              do jat=1,iat
+                if(iniz(jat).ne.0)then
+                  P_MAXJ_A = max(P_MAXJ_A,rdens_atom(jat,iat,1))
+                  P_MAXJ_B = max(P_MAXJ_B,rdens_atom(jat,iat,2))
+                endif
+              enddo
               P_MAXJ = MAX(P_MAXJ_A, P_MAXJ_B)
             else
               P_MAXJ=0d0
@@ -233,7 +239,7 @@ c
      .                P_MAXJ=max(P_MAXJ,rdens_atom(jat,iat,1))
               enddo
             endif
-            if (wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXJ.lt.tol_rho) goto 225
+            if (FUNC_MAXI*FUNC_MAXJ*P_MAXJ.lt.tol_temp) goto 225
          endif
          do 220 jat = 1, iat
             inizja = iniz(jat)
@@ -252,14 +258,12 @@ c
 c           screening parameters
 c
             FUNC_MAXJ=rchi_atom(jat)
-            if(grad)
-     .        FUNC_MAXJ = max(FUNC_MAXJ,rdelchi_atom(jat))
             doitt=.true.
             if(what.lt.2) then
               P_MAXIJ = rdens_atom(iat,jat,1)
               if(ipol.eq.2) P_MAXIJ = max(P_MAXIJ,
      &             rdens_atom(iat,jat,2))
-              doitt=(wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.ge.tol_rho)
+              doitt=(FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.ge.tol_temp)
             endif
             call endtimer(monitor_rscreen0)
             if (doitt) then
@@ -268,7 +272,7 @@ c
 c               screening parameters
 c
                 if((what.gt.1).or.(rdens_atom(iat,jat,ii)*
-     R               wmax*FUNC_MAXI*FUNC_MAXJ.ge.tol_rho)) then
+     R               FUNC_MAXI*FUNC_MAXJ.ge.tol_temp)) then
 c
 c                  Loop over perturbations
 c
@@ -308,8 +312,8 @@ c
      %                        ifirst, ilast, jfirst, jlast, Pmat,nbfia)
                        endif
                        call endtimer(monitor_gaget)
-                       if (wmax*FUNC_MAXI*FUNC_MAXJ*
-     .                     dabsmax(sizeblk,Pmat).lt.tol_rho)goto 215
+                       if (FUNC_MAXI*FUNC_MAXJ*
+     .                     dabsmax(sizeblk,Pmat).lt.tol_temp)goto 215
                        call gat_mat(F, Pmat, nbfia, nbfja, nnia, nnja,
      +                      ifirst, jfirst, ibf(inizia), ibf(inizja))
                      endif
@@ -339,30 +343,32 @@ c                      build tau for meta GGA
 c
                        if(kske) then
                          do mu=inizja,ifinja
+                           do ixyz=1,3
+                             do n=1,nq
+                               ttau(n,ii,ipert) = ttau(n,ii,ipert)+
+     &                         delchi(n,ixyz,mu)*ffd(n,ixyz,mu-inizja+1)
+                             enddo
+                           enddo
+                         enddo
+                       endif
+c                      
+                       if(dolap) then
+                         do mu=inizja,ifinja
                            do n=1,nq
-                             ttau(n,ii,ipert) = ttau(n,ii,ipert)+0.5d0*(
-     &                         delchi(n,1,mu)*ffd(n,1,mu-inizja+1)+
-     &                         delchi(n,2,mu)*ffd(n,2,mu-inizja+1)+
-     &                         delchi(n,3,mu)*ffd(n,3,mu-inizja+1))
+                             lap(n,ii,ipert) = lap(n,ii,ipert)+
+     &                         ff(n,mu-inizja+1)*heschi(n,1,mu)
+                           enddo
+                           do n=1,nq
+                             lap(n,ii,ipert) = lap(n,ii,ipert)+
+     &                         ff(n,mu-inizja+1)*heschi(n,4,mu)
+                           enddo
+                           do n=1,nq
+                             lap(n,ii,ipert) = lap(n,ii,ipert)+
+     &                         ff(n,mu-inizja+1)*heschi(n,6,mu)
                            enddo
                          enddo
                        endif
 
-                       if (dolap) then
-                         do mu=inizja,ifinja
-                           do n=1,nq
-                              ! total
-                              lap(n,ii,ipert) = lap(n,ii,ipert) + 2d0*
-     &                            (delchi(n,1,mu)*ffd(n,1,mu-inizja+1) +
-     &                             delchi(n,2,mu)*ffd(n,2,mu-inizja+1) +
-     &                             delchi(n,3,mu)*ffd(n,3,mu-inizja+1))
-cold     &                             delchi(n,3,mu)*ffd(n,3,mu-inizja+1) +
-cold     &                             heschi(n,1,mu)*ff(n,mu-inizja+1) +
-cold     &                             heschi(n,4,mu)*ff(n,mu-inizja+1) +
-cold     &                             heschi(n,6,mu)*ff(n,mu-inizja+1))
-                           enddo
-                         enddo
-                       endif
                      endif
 c
                      if((what.eq.2.and.jatcur.ne.0).or.
@@ -376,17 +382,6 @@ c
                          call xc_dchiff(nq,inizja,ifinja,
      P                        delrho(1,1,ii,ipert),delchi,
      F                        ff)
-cc DMR/Begin
-                         if (dolap) then
-                            do mu=inizja,ifinja
-                               do n=1,nq
-                                  lap(n,ii,ipert) = lap(n,ii,ipert) +
-     &                            ff(n,mu-inizja+1)*(heschi(n,1,mu) +
-     &                            heschi(n,4,mu) + heschi(n,6,mu))
-                               enddo
-                            enddo
-                         endif
-cc DMR/End
                        elseif(what.eq.2) then
                          call xc_dchiffp(nq,ipol2,inizja,ifinja,
      P                        rho,delchi,ff,
@@ -409,21 +404,28 @@ c                      Compute delXiat(r)*Xjat(r)*Diat,jat
 c                  
                        call dgemm('n','t',nq,nnia,nnja,1d0,
      A                      chi(1,inizja),nq,F,nnia,0d0,ff,nq)
+c
+                       if (dolap) then
+                         do mu=inizia,ifinia
+                           do n=1,nq
+                             lap(n,ii,ipert) = lap(n,ii,ipert) +
+     &                         ff(n,mu-inizia+1)*heschi(n,1,mu)
+                           enddo
+                           do n=1,nq
+                             lap(n,ii,ipert) = lap(n,ii,ipert) +
+     &                         ff(n,mu-inizia+1)*heschi(n,4,mu)
+                           enddo
+                           do n=1,nq
+                             lap(n,ii,ipert) = lap(n,ii,ipert) +
+     &                         ff(n,mu-inizia+1)*heschi(n,6,mu)
+                           enddo
+                         enddo
+                       endif
+c
                        if(what.lt.2) then
                          call xc_dchiff(nq,inizia,ifinia,
      P                        delrho(1,1,ii,ipert),delchi,
      F                        ff)
-cc DMR/Begin
-                         if (dolap) then
-                            do mu=inizia,ifinia
-                               do n=1,nq
-                                  lap(n,ii,ipert) = lap(n,ii,ipert) +
-     &                              ff(n,mu-inizia+1)*(heschi(n,1,mu) +
-     &                              heschi(n,4,mu) + heschi(n,6,mu))
-                               enddo
-                            enddo
-                         endif
-cc DMR/End
                        elseif(what.eq.2) then
                          call xc_dchiffp(nq,ipol2,inizia,ifinia,
      P                        rho,delchi,ff,
@@ -450,6 +452,21 @@ c
   220    continue
   225    continue
   230 continue
+c
+      if(kske.or.dolap) then
+        do ipert=1,npert
+          do ii=1,ipol
+            if (dolap) then
+              lap(1:nq,ii,ipert) = lap(1:nq,ii,ipert) +
+     &                            2d0*ttau(1:nq,ii,ipert)
+              ttau(1:nq,ii,ipert) = 0.5d0*ttau(1:nq,ii,ipert)
+            else
+              ttau(1:nq,ii,ipert) = 0.5d0*ttau(1:nq,ii,ipert)
+            endif
+          enddo
+        enddo
+      endif
+c
       if(zapnegatives) then
 c
 c     Enforce results that are compatible with the laws of physics.

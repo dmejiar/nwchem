@@ -172,7 +172,8 @@ c
       integer ibf(nbf) !< [Input] The rank of the basis function for
                        !< every basis function (why do we need this?)
       double precision A_MAX, C_MAX, AC_MAX, FUNC_MAXI,
-     &                 B_MAX, D_MAX, BD_MAX, FUNC_MAXJ
+     &                 B_MAX, D_MAX, BD_MAX, FUNC_MAXJ, FUNC_MAXIJ,
+     &                 M_MAX, L_MAX, FUNC_DELMAXI, FUNC_DELMAXJ
       integer iat, inizia, ifinia, nbfia, nnia, ifirst, ilast
       integer jat, inizja, ifinja, nbfja, nnja, jfirst, jlast
       integer ii, mu, mu1
@@ -245,6 +246,8 @@ c     lingering nbacc from previous calls
       dofull=what.ne.0.or.l3d
       nbfirst1=.true.
       nbfirst2=.true.
+      M_MAX=0d0
+      L_MAX=0d0
       call endtimer(monitor_screen0)
 c
 c     Beginning of loop over multiple XC matrices
@@ -265,6 +268,14 @@ c
           C_MAX = 0d0
         endif
         AC_MAX = max(A_MAX,C_MAX)
+c
+        if (kske) then
+          M_MAX = dabsmax(nq*ipol,Mmat(1,1,imat))
+        else
+          M_MAX = 0d0
+        endif
+        FUNC_DELMAXI = 0d0
+        FUNC_DELMAXJ = 0d0
 
         call endtimer(monitor_screen1)
 
@@ -283,8 +294,30 @@ c
           iat=nonzero(iat0)
           inizia = iniz(iat)
           FUNC_MAXI = rchi_atom(iat)
-          if(GRAD) FUNC_MAXI = max(FUNC_MAXI,rdelchi_atom(iat))
-          doitt=(AC_MAX*FUNC_MAXI).ge.tol_rho
+          if(GRAD) FUNC_DELMAXI = rdelchi_atom(iat)
+
+          lastjat=iat0
+          if (what.eq.2) lastjat=natleft
+          if (what.eq.3) lastjat=iat0-1
+          
+          FUNC_MAXJ = 0d0
+          do jat0=1,lastjat
+            FUNC_MAXJ = max(FUNC_MAXJ,rchi_atom(nonzero(jat0)))
+          enddo
+          if(grad) then
+            FUNC_DELMAXJ = 0d0
+            do jat0=1,lastjat
+              FUNC_DELMAXJ = max(FUNC_DELMAXJ,
+     &                           rdelchi_atom(nonzero(jat0)))
+            enddo
+          endif
+
+          FUNC_MAXIJ = FUNC_MAXI*FUNC_DELMAXJ + FUNC_DELMAXI*FUNC_MAXJ
+
+          doitt=(FUNC_MAXJ*FUNC_MAXI*A_MAX).ge.tol_rho
+          doitt=doitt.or.((FUNC_MAXIJ*C_MAX).ge.tol_rho)
+          doitt=doitt.or.((FUNC_DELMAXI*FUNC_DELMAXJ*M_MAX).ge.tol_rho)
+
           call endtimer(monitor_screen2)
           if (what.eq.2.or.doitt) then
             ifinia = ifin(iat)
@@ -311,7 +344,7 @@ c
                     Dmat(n,2,mu) = Cmat(n,2,ii,imat)*chi1
                     Dmat(n,3,mu) = Cmat(n,3,ii,imat)*chi1
                     
-                    if(kske) then 
+                    if(kske.and.(M_MAX.gt.0d0)) then 
                       Dmat(n,1,mu) = Dmat(n,1,mu) +
      &                     Mmat(n,ii,imat)*delchi(n,1,mu1)
                       Dmat(n,2,mu) = Dmat(n,2,mu) +
@@ -354,9 +387,6 @@ c
               endif
               BD_MAX = max(B_MAX,D_MAX)
 c
-              lastjat=iat0
-              if (what.eq.2) lastjat=natleft
-              if (what.eq.3) lastjat=iat0-1
               call endtimer(monitor_screen3)
               do 168 jat0=1,lastjat
                 jat=nonzero(jat0)
@@ -373,8 +403,9 @@ c
                 call starttimer(monitor_screen4)
                 inizja = iniz(jat)
                 FUNC_MAXJ = rchi_atom(jat)
-                if(grad) FUNC_MAXJ = max(rdelchi_atom(jat),FUNC_MAXJ)
-                doitt=(BD_MAX*FUNC_MAXJ).ge.tol_rho
+                if(grad) FUNC_DELMAXJ = rdelchi_atom(jat)
+                doitt=B_MAX*FUNC_MAXJ.ge.tol_rho
+                doitt=doitt.or.(D_MAX*FUNC_DELMAXJ.ge.tol_rho)
                 call endtimer(monitor_screen4)
                 if (what.eq.2.or.doitt) then
  
