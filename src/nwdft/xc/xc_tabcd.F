@@ -181,6 +181,7 @@ c
       double precision chi1
       double precision scr(nq) !< [Scratch] Temporary stuff in
                                !< quadrature
+      double precision scrat(nq)
       double precision dabsmax
       double precision tolrho15
       external dabsmax
@@ -269,6 +270,11 @@ c
         endif
         AC_MAX = max(A_MAX,C_MAX)
 c
+        if (kslap.and.kske) then
+          Mmat(:nq,:ipol,imat) = Mmat(:nq,:ipol,imat) +
+     &      2d0*Lmat(:nq,:ipol,imat)
+        endif     
+
         if (kske) then
           M_MAX = dabsmax(nq*ipol,Mmat(1,1,imat))
         else
@@ -326,53 +332,43 @@ c
             nnia = ifinia - inizia + 1
             nbfia = ilast - ifirst + 1
             do ii = 1, ipol
-              do mu = 1, nnia
-
-                call starttimer(monitor_mult1)
-
+              call starttimer(monitor_mult1)
+              do mu=1,nnia
                 mu1 = mu+inizia-1
-                if (GRAD) then
-                  do n = 1, nq
-                    chi1 = chi(n,mu1)
+                Bmat(:nq,mu) = Amat(:nq,ii,imat)*chi(:nq,mu1)
+              enddo
+              if(grad) then
+                do mu=1,nnia
+                  mu1 = mu+inizia-1
+                  Bmat(:nq,mu) = Bmat(:nq,mu) + 
+     &              delchi(:nq,1,mu1)*Cmat(:nq,1,ii,imat) +
+     &              delchi(:nq,2,mu1)*Cmat(:nq,2,ii,imat) +
+     &              delchi(:nq,3,mu1)*Cmat(:nq,3,ii,imat)
+                  Dmat(:nq,1,mu) = Cmat(:nq,1,ii,imat)*chi(:nq,mu1)
+                  Dmat(:nq,2,mu) = Cmat(:nq,2,ii,imat)*chi(:nq,mu1)
+                  Dmat(:nq,3,mu) = Cmat(:nq,3,ii,imat)*chi(:nq,mu1)
+                enddo
+              endif
+              if(kske) then
+                do mu=1,nnia
+                  mu1 = mu+inizia-1
+                  Dmat(:nq,1,mu) = Dmat(:nq,1,mu) + 
+     &              Mmat(:nq,ii,imat)*delchi(:nq,1,mu1)
+                  Dmat(:nq,2,mu) = Dmat(:nq,2,mu) + 
+     &              Mmat(:nq,ii,imat)*delchi(:nq,2,mu1)
+                  Dmat(:nq,3,mu) = Dmat(:nq,3,mu) + 
+     &              Mmat(:nq,ii,imat)*delchi(:nq,3,mu1)
+                enddo
+              endif
+              if(kslap) then
+                do mu=1,nnia
+                  mu1 = mu+inizia-1
+                  Bmat(:nq,mu) = Bmat(:nq,mu) + Lmat(:nq,ii,imat)*
+     &           (heschi(:nq,1,mu1)+heschi(:nq,4,mu1)+heschi(:nq,6,mu1))
+                  Gmat(:nq,mu) = Lmat(:nq,ii,imat)*chi(:nq,mu1)
+                enddo
+              endif
 
-
-                    Bmat(n,mu) = Amat(n,ii,imat)*chi1 +
-     &                   delchi(n,1,mu1)*Cmat(n,1,ii,imat) +
-     &                   delchi(n,2,mu1)*Cmat(n,2,ii,imat) +
-     &                   delchi(n,3,mu1)*Cmat(n,3,ii,imat)
-                    Dmat(n,1,mu) = Cmat(n,1,ii,imat)*chi1
-                    Dmat(n,2,mu) = Cmat(n,2,ii,imat)*chi1
-                    Dmat(n,3,mu) = Cmat(n,3,ii,imat)*chi1
-                    
-                    if(kske.and.(M_MAX.gt.0d0)) then 
-                      Dmat(n,1,mu) = Dmat(n,1,mu) +
-     &                     Mmat(n,ii,imat)*delchi(n,1,mu1)
-                      Dmat(n,2,mu) = Dmat(n,2,mu) +
-     &                     Mmat(n,ii,imat)*delchi(n,2,mu1)
-                      Dmat(n,3,mu) = Dmat(n,3,mu) +
-     &                     Mmat(n,ii,imat)*delchi(n,3,mu1)
-                    endif
-
-                    if(kslap) then
-                      Dmat(n,1,mu) = Dmat(n,1,mu) +
-     &                     2d0*Lmat(n,ii,imat)*delchi(n,1,mu1)
-                      Dmat(n,2,mu) = Dmat(n,2,mu) +
-     &                     2d0*Lmat(n,ii,imat)*delchi(n,2,mu1)
-                      Dmat(n,3,mu) = Dmat(n,3,mu) +
-     &                     2d0*Lmat(n,ii,imat)*delchi(n,3,mu1)
-                      Bmat(n,mu) = Bmat(n,mu) + Lmat(n,ii,imat)*
-     &                (heschi(n,1,mu1)+heschi(n,4,mu1)+heschi(n,6,mu1))
-                      Gmat(n,mu) = Lmat(n,ii,imat)*chi1
-                    endif
-
-                    
-                  enddo
-                else
-                  do n = 1, nq
-                    Bmat(n,mu) = chi(n,mu1)*Amat(n,ii,imat)
-                  enddo
-                endif ! GRAD
-              enddo ! mu
 c     Monitoring 
 
               call endtimer(monitor_mult1)
@@ -511,12 +507,12 @@ c     leading dimension of delchi must be set correctly
                           indT=0
                           do nu = 1, nnja
                              nu1 = nu+inizja-1
+                             scrat(:nq) = heschi(:nq,1,nu1) +
+     &                         heschi(:nq,4,nu1) + heschi(:nq,6,nu1)
                              do mu = 1, nnia
                                indT = indT + 1
                                Tmat(indT) = Tmat(indT) +
-     &                         ddot(nq,Gmat(1,mu),1,heschi(1,1,nu1),1) +
-     &                         ddot(nq,Gmat(1,mu),1,heschi(1,4,nu1),1) +
-     &                         ddot(nq,Gmat(1,mu),1,heschi(1,6,nu1),1)
+     &                         dot_product(Gmat(:nq,mu),scrat(:nq))
                              enddo
                           enddo
                        endif

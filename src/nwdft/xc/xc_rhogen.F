@@ -343,29 +343,18 @@ c                      build tau for meta GGA
 c
                        if(kske) then
                          do mu=inizja,ifinja
-                           do ixyz=1,3
-                             do n=1,nq
-                               ttau(n,ii,ipert) = ttau(n,ii,ipert)+
-     &                         delchi(n,ixyz,mu)*ffd(n,ixyz,mu-inizja+1)
-                             enddo
-                           enddo
+                           ttau(:nq,ii,ipert) = ttau(:nq,ii,ipert) +
+     &                       delchi(:nq,1,mu)*ffd(:nq,1,mu-inizja+1) +
+     &                       delchi(:nq,2,mu)*ffd(:nq,2,mu-inizja+1) +
+     &                       delchi(:nq,3,mu)*ffd(:nq,3,mu-inizja+1)
                          enddo
                        endif
 c                      
                        if(dolap) then
                          do mu=inizja,ifinja
-                           do n=1,nq
-                             lap(n,ii,ipert) = lap(n,ii,ipert)+
-     &                         ff(n,mu-inizja+1)*heschi(n,1,mu)
-                           enddo
-                           do n=1,nq
-                             lap(n,ii,ipert) = lap(n,ii,ipert)+
-     &                         ff(n,mu-inizja+1)*heschi(n,4,mu)
-                           enddo
-                           do n=1,nq
-                             lap(n,ii,ipert) = lap(n,ii,ipert)+
-     &                         ff(n,mu-inizja+1)*heschi(n,6,mu)
-                           enddo
+                           lap(:nq,ii,ipert) = lap(:nq,ii,ipert) +
+     &                       (heschi(:nq,1,mu) + heschi(:nq,4,mu) + 
+     &                        heschi(:nq,6,mu))*ff(:nq,mu-inizja+1)
                          enddo
                        endif
 
@@ -407,18 +396,9 @@ c
 c
                        if (dolap) then
                          do mu=inizia,ifinia
-                           do n=1,nq
-                             lap(n,ii,ipert) = lap(n,ii,ipert) +
-     &                         ff(n,mu-inizia+1)*heschi(n,1,mu)
-                           enddo
-                           do n=1,nq
-                             lap(n,ii,ipert) = lap(n,ii,ipert) +
-     &                         ff(n,mu-inizia+1)*heschi(n,4,mu)
-                           enddo
-                           do n=1,nq
-                             lap(n,ii,ipert) = lap(n,ii,ipert) +
-     &                         ff(n,mu-inizia+1)*heschi(n,6,mu)
-                           enddo
+                           lap(:nq,ii,ipert) = lap(:nq,ii,ipert) +
+     &                       (heschi(:nq,1,mu) + heschi(:nq,4,mu) + 
+     &                        heschi(:nq,6,mu))*ff(:nq,mu-inizia+1)
                          enddo
                        endif
 c
