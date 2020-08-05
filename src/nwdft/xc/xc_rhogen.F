@@ -102,7 +102,7 @@ c
       integer ixyz
       double precision FUNC_MAX, DELFUNC_MAX, FUNC_MAXI, FUNC_MAXJ
       double precision P_MAXJ, P_MAXJ_A, P_MAXJ_B, P_MAXIJ
-      double precision dabsmax, wtemp, tol_temp
+      double precision dabsmax
       integer g_keepd(2)
       integer nbhandl
       integer jj
@@ -172,7 +172,6 @@ c     Dij is screened on desired accuracy/max(|Xi(r)|)*max(|Xj(r)|)
 c
       i0=ipol-1
 c
-      tol_temp = tol_rho*0.01d0
       FUNC_MAX = dabsmax(natoms,rchi_atom)
       DELFUNC_MAX=0d0
       if(grad) DELFUNC_MAX = dabsmax(natoms,rdelchi_atom)
@@ -239,7 +238,7 @@ c
      .                P_MAXJ=max(P_MAXJ,rdens_atom(jat,iat,1))
               enddo
             endif
-            if (FUNC_MAXI*FUNC_MAXJ*P_MAXJ.lt.tol_temp) goto 225
+            if (wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXJ.lt.tol_rho) goto 225
          endif
          do 220 jat = 1, iat
             inizja = iniz(jat)
@@ -263,7 +262,7 @@ c
               P_MAXIJ = rdens_atom(iat,jat,1)
               if(ipol.eq.2) P_MAXIJ = max(P_MAXIJ,
      &             rdens_atom(iat,jat,2))
-              doitt=(FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.ge.tol_temp)
+              doitt=(wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.ge.tol_rho)
             endif
             call endtimer(monitor_rscreen0)
             if (doitt) then
@@ -272,7 +271,7 @@ c
 c               screening parameters
 c
                 if((what.gt.1).or.(rdens_atom(iat,jat,ii)*
-     R               FUNC_MAXI*FUNC_MAXJ.ge.tol_temp)) then
+     R               wmax*FUNC_MAXI*FUNC_MAXJ.ge.tol_rho)) then
 c
 c                  Loop over perturbations
 c
@@ -299,7 +298,7 @@ c
      C                   call xc_getdmblock(int_mb(i_nz),nonz0,natoms,
      C                   cetobfr,g_dens(gindx),
      A                      Pmat,nbhandl)
-                       if (wmax*FUNC_MAXI*FUNC_MAXJ*
+                       if (FUNC_MAXI*FUNC_MAXJ*wmax*
      .                     dabsmax(sizeblk,Pmat).lt.tol_rho)goto 215
                      else
                        call starttimer(monitor_gaget)
@@ -312,8 +311,8 @@ c
      %                        ifirst, ilast, jfirst, jlast, Pmat,nbfia)
                        endif
                        call endtimer(monitor_gaget)
-                       if (FUNC_MAXI*FUNC_MAXJ*
-     .                     dabsmax(sizeblk,Pmat).lt.tol_temp)goto 215
+                       if (FUNC_MAXI*FUNC_MAXJ*wmax*
+     .                     dabsmax(sizeblk,Pmat).lt.tol_rho)goto 215
                        call gat_mat(F, Pmat, nbfia, nbfja, nnia, nnja,
      +                      ifirst, jfirst, ibf(inizia), ibf(inizja))
                      endif
