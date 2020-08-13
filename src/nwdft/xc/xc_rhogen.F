@@ -172,7 +172,7 @@ c     Dij is screened on desired accuracy/max(|Xi(r)|)*max(|Xj(r)|)
 c
       i0=ipol-1
 c
-      tol_temp = tol_rho*0.01d0
+      tol_temp = tol_rho
       FUNC_MAX = dabsmax(natoms,rchi_atom)
       DELFUNC_MAX=0d0
       if(grad) DELFUNC_MAX = dabsmax(natoms,rdelchi_atom)
@@ -299,7 +299,7 @@ c
      C                   call xc_getdmblock(int_mb(i_nz),nonz0,natoms,
      C                   cetobfr,g_dens(gindx),
      A                      Pmat,nbhandl)
-                       if (wmax*FUNC_MAXI*FUNC_MAXJ*
+                       if (FUNC_MAXI*FUNC_MAXJ*
      .                     dabsmax(sizeblk,Pmat).lt.tol_rho)goto 215
                      else
                        call starttimer(monitor_gaget)
@@ -719,7 +719,7 @@ c
      .                 P_MAXJ=max(P_MAXJ,rdens_atom(jat,iat,1))
                enddo
             endif
-            if (wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXJ.ge.tol_rho) then
+            if (FUNC_MAXI*FUNC_MAXJ*P_MAXJ.ge.tol_rho) then
                do jat = 1, iat
                   inizja = iniz(jat)
                   if (inizja.ne.0) then
@@ -732,7 +732,7 @@ c
                      P_MAXIJ = rdens_atom(iat,jat,1)
                      if(ipol.eq.2) P_MAXIJ = max(P_MAXIJ,
      &                    rdens_atom(iat,jat,2))
-                     if(wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.ge.tol_rho)then
+                     if(FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.ge.tol_rho)then
 c     
                         do ipert = 1,npert
                            do ii = 1, ipol
@@ -740,7 +740,7 @@ c
 c     screening parameters
 c     
                               P_MAXIJ = rdens_atom(iat,jat,ii)
-                              if (wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.
+                              if (FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.
      P                             ge.tol_rho) then
                                  nonzero=nonzero+1
                                  nz(nonzero)=(iat-1)*natoms+jat
@@ -1020,7 +1020,7 @@ c
      .              P_MAXJ=max(P_MAXJ,rdens_atom(jat,iat,1))
             enddo
          endif
-         if (wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXJ.lt.tol_rho) goto 225
+         if (FUNC_MAXI*FUNC_MAXJ*P_MAXJ.lt.tol_rho) goto 225
       endif
          do 220 jat = 1, iat
             inizja = iniz(jat)
@@ -1046,7 +1046,7 @@ c
                P_MAXIJ = rdens_atom(iat,jat,1)
                if(ipol.eq.2) P_MAXIJ = max(P_MAXIJ,
      &              rdens_atom(iat,jat,2))
-               doitt=(wmax*FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.ge.tol_rho)
+               doitt=(FUNC_MAXI*FUNC_MAXJ*P_MAXIJ.ge.tol_rho)
             endif
             call endtimer(monitor_rscreen0)
             if (doitt) then
@@ -1055,7 +1055,7 @@ c
 c              screening parameters
 c
             if((what.gt.1).or.(rdens_atom(iat,jat,ii)*
-     R              wmax*FUNC_MAXI*FUNC_MAXJ.ge.tol_rho)) then
+     R              FUNC_MAXI*FUNC_MAXJ.ge.tol_rho)) then
 c
 c           Loop over perturbations
 c
@@ -1081,7 +1081,7 @@ c
      C                 call xc_getdmblock(int_mb(i_nz),nonz0,natoms,
      C                 cetobfr,g_dens(gindx),
      A                    Pmat,nbhandl)
-               if (wmax*FUNC_MAXI*FUNC_MAXJ*
+               if (FUNC_MAXI*FUNC_MAXJ*
      .              dabsmax(sizeblk,Pmat).lt.tol_rho)goto 215
                else
                   call starttimer(monitor_gaget)
@@ -1094,7 +1094,7 @@ c
      %                 ifirst, ilast, jfirst, jlast, Pmat,nbfia)
                   endif
                   call endtimer(monitor_gaget)
-               if (wmax*FUNC_MAXI*FUNC_MAXJ*
+               if (FUNC_MAXI*FUNC_MAXJ*
      .              dabsmax(sizeblk,Pmat).lt.tol_rho)goto 215
                call gat_mat(F, Pmat, nbfia, nbfja, nnia, nnja, ifirst, 
      &                      jfirst, ibf(inizia), ibf(inizja))

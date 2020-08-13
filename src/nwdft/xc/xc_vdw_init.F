@@ -187,7 +187,7 @@ c true ivdw eq 1
       end if
 c
 c use  units change j nm6/mol to au
-      jnm6mol2au=(((10*angs2au)**6)/4186)/627.51
+      jnm6mol2au=(((10*angs2au)**6)/4186d0)/627.51d0
 c
 c use scaled radii and units change
       do i=1,128

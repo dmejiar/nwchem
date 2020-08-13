@@ -98,12 +98,8 @@ c
             gamma = delrho(n,1,1)*delrho(n,1,1) +
      &              delrho(n,2,1)*delrho(n,2,1) +
      &              delrho(n,3,1)*delrho(n,3,1)
-            if (dsqrt(gamma).gt.tol_rho)then
-               gamma = 0.25d0 * gamma
-               x = dsqrt(gamma) / rho43
-            else
-               x = 0d0
-            endif
+            gamma = 0.25d0 * gamma
+            x = dsqrt(gamma) / rho43
 c
             gdenom = 1d0 + 6d0*BETA*x*arcsinh(x)
             gdenom2 = gdenom*gdenom
@@ -124,13 +120,12 @@ c
                Amat(n,1) = Amat(n,1) + (4d0/3d0)*rho13*(g-x*dg)*fac
             endif
 c
-            if (x.gt.tol_rho) then
+            if (x.gt.1d-5) then
                t = 0.5d0 * dg / sqrt(gamma) * fac
-               Cmat(n,D1_GAA) = Cmat(n,D1_GAA) + t
-c               Cmat(n,1,1) = Cmat(n,1,1) + t*delrho(n,1,1)
-c               Cmat(n,2,1) = Cmat(n,2,1) + t*delrho(n,2,1)
-c               Cmat(n,3,1) = Cmat(n,3,1) + t*delrho(n,3,1)
+            else
+               t = (-BETA + 12d0*(BETA*x)**2)/rho43*fac
             endif
+            Cmat(n,D1_GAA) = Cmat(n,D1_GAA) + t
 c
 #if defined(SECOND_DERIV) || defined(THIRD_DERIV)
             if(lfac) g = g + C           ! Add local contribution back to g

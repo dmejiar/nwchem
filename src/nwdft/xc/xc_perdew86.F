@@ -210,12 +210,12 @@ c
             dlnfrho(1) = d1Cn/Cn - (d1phi(1) + FOUR3/rhoval)
             d1f(1) = dlnfrho(1)*func
             Amat(n,1) = Amat(n,1) + d1f(1)*fac
+            d1f(3) = expfac*Cn/rho43*(1.0 - 0.5d0*phi)
+            Cmat(n,D1_GAA) = Cmat(n,D1_GAA) + d1f(3)*fac
+            Cmat(n,D1_GAB) = Cmat(n,D1_GAB) + d1f(3)*2D0*fac
             if (gam12.gt.TOLL)then
                d1phi(2) = phi / (2d0*gamma)
                dlnfgam = 1d0/gamma - d1phi(2)
-               d1f(3) = func*dlnfgam
-               Cmat(n,D1_GAA) = Cmat(n,D1_GAA) + d1f(3)*fac
-               Cmat(n,D1_GAB) = Cmat(n,D1_GAB) + d1f(3)*2D0*fac
 #if defined(SECOND_DERIV) || defined(THIRD_DERIV)
                d2phi(2) = d1phi(2)*dlnphi
                d2phi(3) =-d1phi(2)/(2d0*gamma)

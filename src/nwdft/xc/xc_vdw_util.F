@@ -125,7 +125,7 @@ C>
       double precision t1,t2,dt1x,dt1y,dt1z,dt2x,dt2y,dt2z
       double precision tmp1,tmp2,tmp3,tmp4,fac1,fac2
       double precision eps
-      parameter (eps=1d-19)
+      parameter (eps=1d-99)
       integer i,j
 c
       cni=crd_nr(iat,n,x,z)
@@ -183,7 +183,7 @@ c
 c
 c     Numerical test to avoid division by zero (following Grimme)
 c
-      if (abs(t2).gt.eps) then
+      if (t2.gt.eps) then
         grad(1)=(dt1x*t2-dt2x*t1)/(t2**2)
         grad(2)=(dt1y*t2-dt2y*t1)/(t2**2)
         grad(3)=(dt1z*t2-dt2z*t1)/(t2**2)
@@ -953,6 +953,14 @@ c scan
            a1       =  0.5380d0
            scales8  =  0.0000d0
            a2       =  5.4200d0
+        else if (xccomb(71)) then
+           a1       =  0.5380d0
+           scales8  =  0.0000d0
+           a2       =  5.4200d0
+        else if (xccomb(72)) then
+           a1       =  1.2076d0
+           a2       =  0.8492d0
+           scales8  =  5.3739d0
         else
 c     try to see if set rtdb was used
            read_ok=abs(scales8).gt.0d0.and.

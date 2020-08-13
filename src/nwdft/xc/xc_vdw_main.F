@@ -31,6 +31,32 @@ c
       double precision tmp6,tmp6a,tmp8,tmp8a
       double precision xc_fdmpbj, xc_fdmpbj_d1
       external         xc_fdmpbj, xc_fdmpbj_d1
+      double precision delta, r_energy, l_energy, xc_vdw_e
+      external xc_vdw_e
+c
+cTEST
+c       goto 100
+       if (ga_nodeid().eq.0) then
+c
+       delta = 0.00001d0
+       do A = 1, n
+         do i = 1, 3
+c right displacement
+            x(i,A) = x(i,A) + delta
+            r_energy = xc_vdw_e(s6,s8,sr6,sr8,a1,a2,n,x,z)
+c left displacement
+            x(i,A) = x(i,A) - 2.0d0*delta
+            l_energy = xc_vdw_e(s6,s8,sr6,sr8,a1,a2,n,x,z)
+c back to original position
+            x(i,A) = x(i,A) + delta
+c
+            force(i,A) = (r_energy - l_energy)/(2d0*delta)
+         enddo
+      enddo
+      endif
+      call ga_sync
+      return
+ 100  continue
 c
 c     Derivatives of Grimme dispersion term
 c
@@ -252,9 +278,9 @@ c
 c                 Two center derivatives. Grimme uses screening to reduce 
 c                 computational work
 c
-c                 Screening r^2 distance vs threshold of 20000.0
+c                 Screening r^2 distance vs threshold of 9000.0
 c
-                  if (rAj.gt.20000.d0) goto 941
+                  if (rAj.gt.9000.d0) goto 941
 c
 c                 Factors
 c
@@ -309,6 +335,11 @@ c
  941              continue
                endif
              enddo
+c
+c            skip the three center contributions since the are not
+c            included in the vdw energy
+c
+             cycle
 c
 c            Three center derivatives. Grimme uses aggressive screening
 c            to get this N^3 contribution back to N^2
@@ -462,6 +493,7 @@ c
       integer i6, i8
       parameter(i6 = 6)
       parameter(i8 = 8)
+      double precision cnall(n)
       double precision fdmp, fdmp3, cni, cnj,c6d3,xc_fdmpbj
       double precision c6ij_sk,rij,c6cn,crd_nr,e6,e8,r0bj
       external c6ij_sk,c6cn,nxtask,crd_nr,fdmp3,xc_fdmpbj
@@ -512,6 +544,10 @@ c refers to contributions that come from differentiating the
 c coordination dependent dispersion coefficients.
 c
       else if (ivdw.eq.3) then
+        do i=1,n
+          if(z(i).eq.0) cycle
+          cnall(i) = crd_nr(i,n,x,z)
+        enddo
         do i=1,n-1
           if (Z(i).ne.0) then
             do j=i+1,n
@@ -521,9 +557,9 @@ c
      +            (x(2,i)-x(2,j))**2 +
      +            (x(3,i)-x(3,j))**2)
 c     protect from NaNs caused by bqs
-               if(rij.lt.1d30.or.abs(rij).lt.1d-8) then
-               cni=crd_nr(i,n,x,z)
-               cnj=crd_nr(j,n,x,z)
+               if(rij.lt.1d95.or.abs(rij).lt.1d-8) then
+               cni=cnall(i)
+               cnj=cnall(j)
                c6d3=c6cn(z(i),z(j),cni,cnj)
                c8=3.0d0*c6d3*Qatom(z(i))*Qatom(z(j))
                e6=e6-c6d3*fdmp3(rij,r0AB(z(i),z(j))*sr6,alpha)*
@@ -537,8 +573,13 @@ c     protect from NaNs caused by bqs
         enddo
         xc_vdw_e=e6*s6+e8*s8
       else if (ivdw.eq.4) then
+        do i=1,n
+          if(z(i).eq.0) cycle
+          cnall(i) = crd_nr(i,n,x,z)
+        enddo
         do i=1,n-1
           if (Z(i).ne.0) then
+            cni=cnall(i)
             do j=i+1,n
                if (Z(j).ne.0) then
                rij=dsqrt(
@@ -546,9 +587,8 @@ c     protect from NaNs caused by bqs
      +            (x(2,i)-x(2,j))**2 +
      +            (x(3,i)-x(3,j))**2)
 c     protect from NaNs caused by bqs
-               if(rij.lt.1d30.or.abs(rij).lt.1d-8) then
-               cni=crd_nr(i,n,x,z)
-               cnj=crd_nr(j,n,x,z)
+               if(rij.lt.1d95.or.abs(rij).lt.1d-8) then
+               cnj=cnall(j)
                c6d3=c6cn(z(i),z(j),cni,cnj)
                c8=3.0d0*c6d3*Qatom(z(i))*Qatom(z(j))
                r0bj=dsqrt(c8/c6d3)
