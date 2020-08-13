@@ -1653,6 +1653,29 @@ c
          endif
       endif
 c
+c r2SCAN
+c
+      if (abs(xfac(73)).gt.eps) then
+         if(.not. do_2nd) then
+            call xc_xr2scan(tol_rho, xfac(73), rho, delrho, Amat,
+     &                    Cmat, nq, ipol, Ex, qwght, ldew, func, ttau, 
+     &                    Mmat)
+         else
+            call xc_xr2scan_d2()
+         endif
+      endif
+c
+      if (abs(cfac(73)).gt.eps) then
+         if(.not. do_2nd) then
+            call xc_cr2scan(tol_rho, cfac(73), rho, delrho, Amat, 
+     &                    Cmat, nq, ipol, Ec, qwght, ldew, func, ttau, 
+     &                    Mmat)
+         else
+            call xc_cr2scan_d2()
+         endif
+      endif
+
+c
       if (abs(xfac(72)).gt.eps)then
          if (.not. do_2nd .and..not. do_3rd) then
             call xc_xncap(tol_rho, xfac(72), rho,
@@ -1795,7 +1818,7 @@ c
       call xc_eval_fnl(rho, delrho, Amat, Amat2, Cmat, Cmat2,
      &                       nq, Ex, Ec, qwght, grad, ldew, func,
      &                       do_2nd, ttau, kske, Mmat, Mmat2,
-     &                       0d0, .false., 0d0,
+     &                       (/0d0/), .false., (/0d0/),
      &                       StericEnergy, do_3rd, Amat3, Cmat3, ldew2)
 
       do i=1,numfunc
