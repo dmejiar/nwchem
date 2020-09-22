@@ -961,6 +961,14 @@ c scan
            a1       =  1.2076d0
            a2       =  0.8492d0
            scales8  =  5.3739d0
+        else if (xccomb(73)) then
+           a1       =  0.5380d0
+           scales8  =  0.0000d0
+           a2       =  5.4200d0
+        else if (xccomb(74)) then
+           a1       =  0.5380d0
+           scales8  =  0.0000d0
+           a2       =  5.4200d0
         else
 c     try to see if set rtdb was used
            read_ok=abs(scales8).gt.0d0.and.

@@ -605,6 +605,7 @@ c
       cname(69)='          revM06-L Correlation Potential'
       cname(71)='             rSCAN Correlation Potential'
       cname(73)='            r2SCAN Correlation Potential'
+      cname(74)='          r2SCAN-L Correlation Potential'
 c
 c     Exchange functional name defaults.
 c
@@ -674,6 +675,7 @@ c
       xname(71)='       rSCAN metaGGA Exchange Functional'
       xname(72)='            NCAP GGA Exchange Functional'
       xname(73)='      r2SCAN metaGGA Exchange Functional'
+      xname(74)='    r2SCAN-L metaGGA Exchange Functional'
 c
 c     Exchange-Correlation combination functional name defaults.
 c

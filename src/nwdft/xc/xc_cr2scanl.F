@@ -30,9 +30,8 @@ c     J. Sun, A. Ruzsinszky, J.P. Perdew
 c     PRL 115, 036402 (2015)
 c     DOI: 10.1103/PhysRevLett.115036402
 
-      Subroutine xc_cr2scan(tol_rho, cfac, rho, delrho, Amat, 
-     &                    Cmat, nq, ipol, Ec, qwght, ldew, func,
-     &                    tau, Mmat)     
+      Subroutine xc_cr2scanl(tol_rho, cfac, rho, delrho, laprho, Amat, 
+     &                    Cmat, Lmat, nq, ipol, Ec, qwght, ldew, func)     
 c
       implicit none
 c
@@ -66,9 +65,9 @@ c     Charge Density Gradient
 c
       double precision delrho(nq,3,ipol), gammaval, gam12
 c
-c     Kinetic Energy Density
+c     Charge Density Laplacian
 c
-      double precision tau(nq,ipol), tauN
+      double precision laprho(nq,ipol)
 c
 c     Quadrature Weights
 c
@@ -76,13 +75,12 @@ c
 c
 c     Sampling Matrices for the XC Potential
 c
-      double precision Amat(nq,ipol), Cmat(nq,*)
-      double precision Mmat(nq,*)
+      double precision Amat(nq,ipol), Cmat(nq,*), Lmat(nq,ipol)
 c
 c     Intermediate derivatives, results, etc.
 c
       integer n, ifc
-      double precision ntot,n13,n83,tautot
+      double precision ntot,n13,n83,n53,tautot
       double precision dn2,p,rs,rs12,drsdn,dpdg,dpdn
       double precision epsc,depscdrs,depscdzeta
       double precision zeta,omz,opz
@@ -116,6 +114,9 @@ c
       double precision deltaY, deltaYp, ddeltaYpdrs, ddeltaYpdp
       double precision ddeltaYpdz, GAt2y, dGAt2ydrs, dGAt2ydp
       double precision dGAt2ydz,opz23,omz23,exp1
+      double precision tuega, tuegb, pa, pb, qa, qb
+      double precision fsa, fsb, dfsdpa, dfsdpb, dfsdqa, dfsdqb, dfcadt
+      double precision dtdna, dtdnb, dtdga, dtdgb, dtdla, dtdlb
 
       double precision GAMMA,BETAzero,pi,p14a,p14b,p14f,ckf,ckf2
       parameter (BETAzero = 0.06672455060314922d0)
@@ -141,8 +142,9 @@ c
      &            -5d0*1.915710236206d0, 6d0*5.16884468372d-1,
      &            -7d0*5.1848879792d-2 /) )
 
-      double precision eta, rDp2, rfc2
+      double precision eta, rDp2, rfc2, two53
       parameter (eta=1d-3, rDp2=0.361d0, rfc2 = sum(rRegu1))
+      parameter (two53=2d0**F53)
 c
 c     ======> BOTH SPIN-RESTRICETED AND UNRESTRICTED <======
 c
@@ -158,7 +160,70 @@ c
          if (ntot.le.tol_rho) goto 20
 
          n13=ntot**F13
+         n53=ntot**F53
          n83=ntot**F83
+
+         if (ipol.eq.1) then
+           dn2=delrho(n,1,1)**2 + delrho(n,2,1)**2 + delrho(n,3,1)**2
+         else
+           dn2=(delrho(n,1,1)+delrho(n,1,2))**2 +
+     &         (delrho(n,2,1)+delrho(n,2,2))**2 +
+     &         (delrho(n,3,1)+delrho(n,3,2))**2
+         end if
+c         
+         if (ipol.eq.1) then
+           pa = dn2/(4d0*ckf2*n83)
+           qa = laprho(n,1)/(4d0*ckf2*n53)
+           tuega = 0.3d0*ckf2*n53
+           call ts_pc(tol_rho, rho(n,1), delrho(n,1:3,1), laprho(n,1),
+     &                dfsdpa, dfsdqa, fsa, 1d0)
+           tautot = tuega*fsa
+           dtdna = F53*tuega/rho(n,1)*fsa - 
+     &             tuega*(F83*dfsdpa*pa/rho(n,1) + 
+     &                    F53*dfsdqa*qa/rho(n,1))
+           dtdga = 2d0*tuega*dfsdpa/(4d0*ckf2*n83)
+           dtdla = tuega*dfsdqa/(4d0*ckf2*n53)
+         else
+           tuega = 0.5d0*0.3d0*two53*ckf2*rho(n,2)**F53
+           tuegb = 0.5d0*0.3d0*two53*ckf2*rho(n,3)**F53
+           call ts_pc(tol_rho, rho(n,2), delrho(n,1:3,1), laprho(n,1),
+     &                dfsdpa, dfsdqa, fsa, 2d0)
+           call ts_pc(tol_rho, rho(n,3), delrho(n,1:3,2), laprho(n,2),
+     &                dfsdpb, dfsdqb, fsb, 2d0)
+           tautot=(tuega*fsa + tuegb*fsb)
+           if (rho(n,2).gt.tol_rho) then
+             pa = (delrho(n,1,1)**2 +
+     &             delrho(n,2,1)**2 +
+     &             delrho(n,3,1)**2)/(ckf2*(2d0*rho(n,2))**F83)
+             qa = laprho(n,1)/(2d0*ckf2*(2d0*rho(n,2))**F53)
+             dtdna = F53*tuega/rho(n,2)*fsa -
+     &               tuega*(F83*dfsdpa*pa/rho(n,2) +
+     &                      F53*dfsdqa*qa/rho(n,2))
+             dtdga = tuega*dfsdpa/(ckf2*(2d0*rho(n,2))**F83)
+             dtdla = tuega*dfsdqa/(2d0*ckf2*(2d0*rho(n,2))**F53)
+           else
+             dtdna = 0d0
+             dtdga = 0d0
+             dtdla = 0d0
+           endif
+           if (rho(n,3).gt.tol_rho) then
+             pb = (delrho(n,1,2)**2 +
+     &             delrho(n,2,2)**2 +
+     &             delrho(n,3,2)**2)/(ckf2*(2d0*rho(n,3))**F83)
+             qb = laprho(n,2)/(2d0*ckf2*(2d0*rho(n,3))**F53)
+             dtdnb = F53*tuegb/rho(n,3)*fsb -
+     &               tuegb*(F83*dfsdpb*pb/rho(n,3) +
+     &                      F53*dfsdqb*qb/rho(n,3))
+             dtdgb = tuegb*dfsdpb/(ckf2*(2d0*rho(n,3))**F83)
+             dtdlb = tuegb*dfsdqb/(2d0*ckf2*(2d0*rho(n,3))**F53)
+           else
+             dtdnb = 0d0
+             dtdgb = 0d0
+             dtdlb = 0d0
+           endif
+         endif
+
+
          rs=p14f/n13
          rs12=dsqrt(rs)
          drsdn=-F13*rs/ntot
@@ -194,14 +259,6 @@ c----------------------------------------------------------------------
 c functions related to delrho  
 c----------------------------------------------------------------------
 c
-         if (ipol.eq.1) then
-           dn2=delrho(n,1,1)**2 + delrho(n,2,1)**2 + delrho(n,3,1)**2
-         else
-           dn2=(delrho(n,1,1)+delrho(n,1,2))**2 +
-     &         (delrho(n,2,1)+delrho(n,2,2))**2 +
-     &         (delrho(n,3,1)+delrho(n,3,2))**2
-         end if
-c         
          p=dn2/(F4*ckf2*n83)
          dpdg = 1d0/(F4*ckf2*n83)
          dpdn = -F83*p/ntot
@@ -216,11 +273,6 @@ c----------------------------------------------------------------------
 c functions related to tau
 c----------------------------------------------------------------------
 c
-         if (ipol.eq.1) then
-           tautot=tau(n,1)
-         else
-           tautot=tau(n,1)+tau(n,2)
-         endif
 
          alpha = (tautot - tvw)/(tueg + eta*tvw)
          oma = 1d0 - alpha
@@ -339,31 +391,33 @@ c
          dEc1dn = dEc1drs*drsdn + dEc1dp*dpdn
          dEc0dn = dEc0drs*drsdn + dEc0dp*dpdn
          dfcadn = dfcada*dalphadn
+         dfcadt = dfcada*dalphadt
+
          vcn = Ec1 + fca*(Ec0-Ec1) + 
      &         ntot*(dEc1dn + fca*(dEc0dn-dEc1dn) + dfcadn*(Ec0-Ec1))
 
-         Amat(n,1) = Amat(n,1) + cfac*vcn
+         Amat(n,1) = Amat(n,1) + cfac*(vcn+ntot*dfcadt*(Ec0-Ec1)*dtdna)
 
          dEc1dg = dEc1dp*dpdg
          dEc0dg = dEc0dp*dpdg
          dfcadg = dfcada*dalphadg         
 
          Cmat(n,D1_GAA) = Cmat(n,D1_GAA) + cfac*ntot*(dEc1dg + 
-     &   fca*(dEc0dg-dEc1dg) + dfcadg*(Ec0-Ec1))
+     &   fca*(dEc0dg-dEc1dg) + dfcadg*(Ec0-Ec1) +
+     &   dfcadt*(Ec0-Ec1)*dtdga)
          Cmat(n,D1_GAB) = Cmat(n,D1_GAB) + cfac*ntot*(dEc1dg + 
      &   fca*(dEc0dg-dEc1dg) + dfcadg*(Ec0-Ec1))*2d0
 
-         Mmat(n,1) = Mmat(n,1) + 0.5d0*cfac*
-     &                           ntot*dfcada*dalphadt*(Ec0-Ec1)
+         Lmat(n,1) = Lmat(n,1) + cfac*ntot*dfcadt*dtdla*(Ec0-Ec1)
 
          if (ipol.eq.2) then
-           Amat(n,2) = Amat(n,2) + cfac*vcn
+           Amat(n,2) = Amat(n,2)+cfac*(vcn+ntot*dfcadt*(Ec0-Ec1)*dtdnb)
 
            Cmat(n,D1_GBB) = Cmat(n,D1_GBB) + cfac*ntot*(dEc1dg +
-     &     fca*(dEc0dg-dEc1dg) + dfcadg*(Ec0-Ec1))
+     &     fca*(dEc0dg-dEc1dg) + dfcadg*(Ec0-Ec1) +
+     &     dfcadt*(Ec0-Ec1)*dtdgb)
            
-           Mmat(n,2) = Mmat(n,2) + 0.5d0*cfac*
-     &                             ntot*dfcada*dalphadt*(Ec0-Ec1)
+           Lmat(n,2) = Lmat(n,2) + cfac*ntot*dfcadt*dtdlb*(Ec0-Ec1)
 
            if (omz.lt.tol_rho) then
              dphidzeta = 0.5d0*F23*(opz23/opz)
@@ -411,8 +465,8 @@ c
 20    continue
       end
 
-      Subroutine xc_cr2scan_d2()
+      Subroutine xc_cr2scanl_d2()
       implicit none
-      call errquit(' xc_cscan: d2 not coded ',0,0)
+      call errquit(' xc_cr2scanl: d2 not coded ',0,0)
       return
       end

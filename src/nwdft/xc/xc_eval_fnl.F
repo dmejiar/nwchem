@@ -1674,6 +1674,28 @@ c
             call xc_cr2scan_d2()
          endif
       endif
+c
+c r2SCAN-L
+c
+      if (abs(xfac(74)).gt.eps) then
+         if(.not. do_2nd) then
+            call xc_xr2scanl(tol_rho, xfac(74), rho, delrho, laprho,
+     &                    Amat, Cmat, Lmat, nq, ipol, Ex, qwght, ldew, 
+     &                    func)
+         else
+            call xc_xr2scanl_d2()
+         endif
+      endif
+c
+      if (abs(cfac(74)).gt.eps) then
+         if(.not. do_2nd) then
+            call xc_cr2scanl(tol_rho, cfac(74), rho, delrho, laprho, 
+     &                    Amat, Cmat, Lmat, nq, ipol, Ec, qwght, ldew, 
+     &                    func)
+         else
+            call xc_cr2scanl_d2()
+         endif
+      endif
 
 c
       if (abs(xfac(72)).gt.eps)then

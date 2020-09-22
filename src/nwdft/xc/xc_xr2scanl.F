@@ -29,9 +29,9 @@ c     J. Sun, A. Ruzsinszky, J.P. Perdew
 c     PRL 115, 036402 (2015)
 c     DOI: 10.1103/PhysRevLett.115036402
 
-      Subroutine xc_xr2scan(tol_rho, fac,  rho, delrho, 
-     &                    Amat, Cmat, nq, ipol, Ex, 
-     &                    qwght, ldew, func, tau,Mmat)
+      Subroutine xc_xr2scanl(tol_rho, fac,  rho, delrho, laprho,
+     &                    Amat, Cmat, Lmat, nq, ipol, Ex, 
+     &                    qwght, ldew, func)
       implicit none
 c
       double precision fac, Ex
@@ -47,17 +47,18 @@ c     Charge Density Gradient
 c
       double precision delrho(nq,3,ipol)
 c
+c     Charge Density Laplacian
+c
+      double precision laprho(nq,ipol)
+c
 c     Quadrature Weights
 c
       double precision qwght(nq)
 c
 c     Sampling Matrices for the XC Potential & Energy
 c
-      double precision Amat(nq,ipol), Cmat(nq,*)
+      double precision Amat(nq,ipol), Cmat(nq,*), Lmat(nq,ipol)
 c
-c     kinetic energy density   or  tau
-c
-      double precision tau(nq,ipol), Mmat(nq,*)
       double precision tol_rho
 c
       integer ispin,cmatpos
@@ -67,9 +68,9 @@ c
 c     SPIN-RESTRICTED
 c     Ex = Ex[n]
 c
-         call xc_xr2scan_cs(tol_rho, fac,  rho, delrho, 
-     &                    Amat, Cmat, nq, Ex, 1d0,
-     &                    qwght, ldew, func, tau,Mmat)
+         call xc_xr2scanl_cs(tol_rho, fac,  rho, delrho, laprho,
+     &                    Amat, Cmat, Lmat, nq, Ex, 1d0,
+     &                    qwght, ldew, func)
       else
 c     
 c     SPIN-UNRESTRICTED
@@ -78,20 +79,19 @@ c     Ex = Ex[2n_up]/2 + Ex[2n_down]/2
          do ispin=1,2
             if (ispin.eq.1) cmatpos=D1_GAA
             if (ispin.eq.2) cmatpos=D1_GBB
-            call xc_xr2scan_cs(tol_rho, fac,  
-     R           rho(1,ispin+1), delrho(1,1,ispin), 
-     &           Amat(1,ispin), Cmat(1,cmatpos), 
+            call xc_xr2scanl_cs(tol_rho, fac,  
+     R           rho(1,ispin+1), delrho(1,1,ispin), laprho(1,ispin),
+     &           Amat(1,ispin), Cmat(1,cmatpos), Lmat(1,ispin),
      &           nq, Ex, 2d0,
-     &           qwght, ldew, func, 
-     T           tau(1,ispin),Mmat(1,ispin))
+     &           qwght, ldew, func)
          enddo
 
       endif
       return
       end
-      Subroutine xc_xr2scan_cs(tol_rho, fac,  rho, delrho, 
-     &                     Amat, Cmat, nq, Ex, facttwo,
-     &                     qwght, ldew, func, tau,Mmat)
+      Subroutine xc_xr2scanl_cs(tol_rho, fac,  rho, delrho, laprho,
+     &                     Amat, Cmat, Lmat, nq, Ex, facttwo,
+     &                     qwght, ldew, func)
       implicit none
 c
       double precision fac, Ex
@@ -107,23 +107,23 @@ c     Charge Density Gradient
 c
       double precision delrho(nq,3)
 c
+c     Charge Density Laplacian
+c
+      double precision laprho(nq)
+c
 c     Quadrature Weights
 c
       double precision qwght(nq)
 c
 c     Sampling Matrices for the XC Potential & Energy
 c
-      double precision Amat(nq), Cmat(nq)
-c
-c     kinetic energy density   or  tau
-c
-      double precision tau(nq,*), Mmat(nq)
+      double precision Amat(nq), Cmat(nq), Lmat(nq)
 c
       double precision facttwo, afact2 ! 2 for o.s. 1 for c.s.
 c
       integer n, ifx
       double precision tol_rho, pi
-      double precision rhoval, rrho, rho13, rho43, rho83
+      double precision rhoval, rrho, rho13, rho43, rho53, rho83
       double precision tauN, tauW, tauU
       double precision p, p14, a, g2
 
@@ -143,13 +143,15 @@ c
 
 c     functional derivatives below FFFFFFFFFFFF
 
-      double precision derivr, derivg, derivt
+      double precision derivr, derivg, derivl
       double precision dFada
       double precision dGdp, dHdp, dHdx, dHda
       double precision dxdp, dx1dp, dx2dp, dxda
       double precision dpdg, dpdr 
-      double precision dFxda, dFxdp, dFxdr, dFxdg, dFxdt
-      double precision dadp,dadg,dadt,dadr,alpha
+      double precision dFxda, dFxdp, dFxdr, dFxdg, dFxdl
+      double precision dadp,dadg,dadt,dadr,alpha,dadq
+      double precision fs, dfsdp, dfsdq, dqdr, dqdl, q
+      double precision lapval
       
 c     functional derivatives above FFFFFFFFFFFF
       
@@ -187,11 +189,15 @@ c
       do n = 1, nq
          if (rho(n).ge.tol_rho) then
 
+            call ts_pc(tol_rho, rho(n), delrho(n,1:3), laprho(n),
+     &                 dfsdp, dfsdq, fs, facttwo)
+
             rhoval=rho(n)*facttwo
             rho43 = rhoval**F43  ! rho^4/3
             rrho  = 1d0/rhoval   ! reciprocal of rho
             rho13 = rho43*rrho 
             rho83 = rho43*rho43
+            rho53 = rho43*rho13
       
       
             g2 = delrho(n,1)*delrho(n,1) +
@@ -200,16 +206,18 @@ c
 
             g2 = g2 *facttwo*facttwo
 
-            tauN = tau(n,1)*facttwo
+            lapval = laprho(n)*facttwo
+
             tauW = F18*g2*rrho
-            tauU = 0.3d0*Pconst*rhoval**F53
+            tauU = 0.3d0*Pconst*rho53
 c     
 c     Evaluate the Fx
 c     
             p   = g2/(4d0*Pconst*rho83)
             p14 = dsqrt(dsqrt(p))
+            q = lapval/(4d0*Pconst*rho53)
 c
-            alpha=(tauN-tauW)/(tauU + eta*tauW)
+            alpha = (fs - f53*p)/(1d0 + eta*f53*p)
 
             oma = 1d0 - alpha
             oma2 = oma*oma
@@ -254,9 +262,11 @@ c     functional derivatives FFFFFFFFFFFFFFFFFFFFFFFFFFFF
             dpdr = -F83*p*rrho
             dpdg = 1d0/(4d0*Pconst*rho83)
 
-            dadt = 1d0/(tauU + eta*tauW)
-            dadg = -f18*rrho*(alpha*eta + 1d0)/(tauU + eta*tauW)
-            dadr = f53*tauU*rrho/(tauU + eta*tauW)*(p-alpha+eta*p*alpha)
+            dqdr = -F53*q*rrho
+            dqdl = 1.d0/(4d0*Pconst*rho53)
+
+            dadp = (dfsdp - f53 - alpha*eta*f53)/(1d0 + eta*f53*p)
+            dadq = dfsdq/(1d0 + eta*f53*p)
 
             if (p14.lt.0.001d0) then
               dGdp = 0d0
@@ -283,27 +293,27 @@ c
             dFxdp = dGdp*(H + Fa*(rH0 - H)) + G*dHdp*(1d0 - Fa)
             dFxda = G*(dFada*(rH0 - H))
 
-            dFxdr = dFxda*dadr + dFxdp*dpdr
-            dFxdg = dFxda*dadg + dFxdp*dpdg
-            dFxdt = dFxda*dadt
+            dFxdr = dFxda*(dadp*dpdr + dadq*dqdr) + dFxdp*dpdr
+            dFxdg = dFxda*(dadp*dpdg) + dFxdp*dpdg
+            dFxdl = dFxda*dadq*dqdl
 
             derivr = F43*Ax*rho13*Fx + Ax*rho43*dFxdr
             derivg = Ax*rho43*dFxdg
-            derivt = Ax*rho43*dFxdt
+            derivl = Ax*rho43*dFxdl
 
             Amat(n) = Amat(n) + derivr*fac
 c     
 c     4x factor comes from gamma_aa = gamma_total/4
 c     
             Cmat(n)=  Cmat(n) + 2.0d0*derivg*fac
-            Mmat(n)=  Mmat(n) + 0.5d0*derivt*fac
+            Lmat(n)=  Lmat(n) + derivl*fac
          endif
       enddo
       return
       end
 
-      Subroutine xc_xr2scan_d2()
-      call errquit(' xscan: d2 not coded ',0,0)
+      Subroutine xc_xr2scanl_d2()
+      call errquit(' xr2scanl: d2 not coded ',0,0)
       return
       end
 
