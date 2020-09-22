@@ -512,7 +512,7 @@ c     leading dimension of delchi must be set correctly
                              do mu = 1, nnia
                                indT = indT + 1
                                Tmat(indT) = Tmat(indT) +
-     &                         dot_product(Gmat(:nq,mu),scrat(:nq))
+     &                         ddot(nq,Gmat(1,mu),1,scrat(1),1)
                              enddo
                           enddo
                        endif
