@@ -109,7 +109,7 @@ c
                  write(6,123) ' negative eia',ipole,eia(ipole,isp),w2,
      P                (eia(ipole,isp)/(eia(ipole,isp)**2 + w2))
               endif
- 123          format(i5,3e12.2)
+ 123          format(a,i5,3e12.2)
               factor(ipole,isp) = 
      $            dsqrt(eia(ipole,isp)/(eia(ipole,isp)**2 + w2))
           enddo
