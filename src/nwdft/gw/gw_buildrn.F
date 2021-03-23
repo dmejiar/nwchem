@@ -46,7 +46,7 @@
 
       double precision, parameter :: one = 1d0
       double precision, parameter :: qnan = 
-     $            transfer(z'7FF0000000000001',one)
+     $            transfer(int(z'7FF0000000000001'),one)
 
 #ifdef USE_OPENMP      
       integer iMaxThreads
