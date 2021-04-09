@@ -55,6 +55,10 @@ c
       pars%timer%iw    = 0d0
       pars%timer%vmo   = 0d0
 
+      pars%ecrpa = 0d0
+      pars%ecgm  = 0d0
+      pars%ex    = 0d0
+
       pars%me = ga_nodeid()
       pars%nprocs = ga_nnodes()
 
@@ -66,6 +70,9 @@ c
 
       if (.not.rtdb_get(pars%rtdb,'gw:init',mt_log,1,init))
      $  call gw_defaults(pars%rtdb) 
+
+      if (.not.rtdb_get(pars%rtdb,'dft:energy',mt_dbl,1,pars%escf))
+     $  call errquit(pname//'failed to read DFT energy',0,RTDB_ERR) 
 
       if (.not.rtdb_get(pars%rtdb,'gw:evgw0',mt_log,1,pars%evgw0))
      $  call errquit(pname//'failed to read evgw0',0,RTDB_ERR)

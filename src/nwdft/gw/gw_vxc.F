@@ -85,7 +85,7 @@ c     density
 c
       do isp=1,ipol
         if (odftps) call pstat_on(ps_dgemm)
-        call ga_dgemm('n','t',nbf_ao,nbf_ao,noc(1),2d0/dble(ipol),
+        call ga_dgemm('n','t',nbf_ao,nbf_ao,noc(isp),2d0/dble(ipol),
      $                 pars%g_movecs(isp),pars%g_movecs(isp),0d0,
      $                 g_dens(isp))
         if (odftps) call pstat_off(ps_dgemm)
@@ -106,14 +106,17 @@ c
       rho_n = 0.0d0
       cdfit = .true.
       npol = (ipol*(ipol+1))/2
+      exc = 0d0
 c
       call xc_rep_init(pars%rtdb,geom,ao_bas_han,g_dens,g_vxc,nbf_ao,
      $                 ipol,.true.,.false.) 
 c
-      call xc_getv(pars%rtdb, exc, ecoul, 1, 0, 0,
+      call xc_getv(pars%rtdb, exc, ecoul, 2, 0, 0,
      $             g_dens, g_vxc, .false., g_wght, g_xyz, g_nq,
      $             .false., rho_n, dbl_mb(k_rdens_atom),
      $             dbl_mb(k_cetobfr), natoms) 
+      pars%exscf = exc(1)
+      pars%ecscf = exc(2)
 
       if (.not.xc_rep_close(pars%rtdb,nbf_ao,ipol,g_vxc,g_dens,.false.))
      $  call errquit(pname//'xc_rep_close failed',0,DISK_ERR) 

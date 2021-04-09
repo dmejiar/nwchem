@@ -168,9 +168,9 @@ c
      $                    pars%nvir(i),mynmo,pars%nqp(i),pars%llmo(i))
       enddo
 
-      call gw_buildiw(pars,dbl_mb(kEia),dbl_mb(pars%k_glx),dbl_mb(kiW),
-     $    int_mb(kiWidx),pars%nmo,nri,pars%ngl,mynmo,maxpoles,maxqp,
-     $    pars%ipol)
+      call gw_buildiw(pars,dbl_mb(kEia),dbl_mb(pars%k_glx),
+     $          dbl_mb(pars%k_glw),dbl_mb(kiW),int_mb(kiWidx),
+     $          pars%nmo,nri,pars%ngl,mynmo,maxpoles,maxqp,pars%ipol)
 
 c      call gw_buildiw_minres(pars,dbl_mb(kEia),dbl_mb(pars%k_glx),
 c     $     dbl_mb(kiW),
@@ -267,6 +267,8 @@ c     *****************************************************************
       integer addrOO, addrOV, addrVV
       integer,external :: omp_get_num_threads,omp_get_thread_num
 
+      pars%ex = 0d0
+
       do ipol=1,pars%ipol
         if (pars%nqp(ipol).eq.0) cycle
 
@@ -306,6 +308,10 @@ c
       enddo
 
       call ga_dgop(mt_dbl,sigmax,nmo*pars%ipol,'+')
+
+      do ipol=1,pars%ipol
+        pars%ex = pars%ex+sum(sigmax(1:pars%nocc(ipol),ipol))/pars%ipol
+      enddo
 
       end subroutine
 
@@ -431,7 +437,7 @@ c
       do isp=1,ipol
 
         ! shift occupied states as HOMO
-        if (noqp(isp).lt.nocc(isp)) then
+        if (noqp(isp).lt.nocc(isp) .and.noqp(isp).gt.0) then
           shift = 0d0
           do imo=nocc(isp),nocc(isp)-noqp(isp)+1,-1
             shift = shift + enew(nocc(isp),isp) - eold(nocc(isp),isp)
@@ -444,7 +450,7 @@ c
         endif
 
         ! shift unoccupied states as LUMO
-        if (nvqp(isp).lt.nvir(isp)) then
+        if (nvqp(isp).lt.nvir(isp) .and. nvqp(isp).gt.0) then
           shift = 0d0
           do imo=nocc(isp)+1,nocc(isp)+nvqp(isp)
             shift = shift + enew(nocc(isp)+1,isp)-eold(nocc(isp)+1,isp)
