@@ -1759,11 +1759,23 @@ c
          endif
       endif
 c
+      if (abs(xfac(79)).gt.eps) then
+        call xc_xrevwpbe(tol_rho, xfac(79), rho, delrho, Amat, Cmat, nq,
+     &                 ipol, Ex, qwght, ldew, func, 2)
+      endif
+
+      if (abs(xfac(80)).gt.eps) then
+        call xc_xrevwpbe(tol_rho, xfac(80), rho, delrho, Amat, Cmat, nq,
+     &                 ipol, Ex, qwght, ldew, func, 1)
+      endif
+
+c
 c     libxc potential and energy
 c
       call nwchem_libxc_compute(nq,Ex,Ec,qwght,rho,delrho,ttau,
      $     laprho,Amat,Amat2,Amat3,Cmat,Cmat2,Cmat3,Mmat,Lmat,func,
      $     grad,kske,kslap,ldew,do_2nd,do_3rd)
+
 c
 c     Calculate the steric energy
 c

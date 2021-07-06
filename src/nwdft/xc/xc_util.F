@@ -44,7 +44,7 @@ c
      +     xfac(72) + xfac(73) + xfac(74) +
      +     xfac(75) + cfac(75) +
      w     xfac(76) + xfac(77) + cfac(76) + cfac(77) +
-     w     xfac(78) + cfac(78) + 
+     w     xfac(78) + cfac(78) + xfac(79) + xfac(80) +
      L     lxdm +
 cc AJL/Begin/FDE
      + xfac_fde(3) + xfac_fde(4) + xfac_fde(5) + xfac_fde(6) + 
@@ -207,6 +207,8 @@ cwb97 should have 2nds
      .     xfac(76).ne.0d0.or.
      .     xfac(77).ne.0d0.or.
      .     xfac(78).ne.0d0.or.
+     .     xfac(79).ne.0d0.or.
+     .     xfac(80).ne.0d0.or.
 c
 chcth     .     cfac(13).ne.0d0.or.
 cCbecke97     .     cfac(14).ne.0d0.or.
@@ -373,6 +375,7 @@ c
      .     xfac(76).ne.0d0.or.
      .     xfac(77).ne.0d0.or.
      .     xfac(78).ne.0d0.or.
+     .     xfac(79).ne.0d0.or.
      .     xfac(51).ne.0d0)
       if (.not.rtdb_get(rtdb, 'dft:cam_exch', mt_log, 1, cam_exch)) 
      &     cam_exch=.false.
@@ -532,6 +535,8 @@ c
      .     xfac(76).ne.0d0.or.  ! wb97
      .     xfac(77).ne.0d0.or.  ! wb97x
      .     xfac(78).ne.0d0.or.  ! wb97x-d3
+     .     xfac(79).ne.0d0.or.  !
+     .     xfac(80).ne.0d0.or.  !
 c
      .     cfac(5).ne.0d0.or.   ! PW91
      .     cfac(13).ne.0d0.or.  ! HCTH

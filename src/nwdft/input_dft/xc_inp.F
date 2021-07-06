@@ -141,7 +141,7 @@ c
 c     hcth147@tz2p ==> 1947
 c
       integer num_dirs, ind, mlen, iline, n, itemp
-      parameter (num_dirs=159)
+      parameter (num_dirs=161)
 c
       character*15 dirs(num_dirs)
       character*255 test
@@ -198,7 +198,8 @@ c
      &     'xncap', 'ncap', 'r2scan', 'r2scanl',
      &     'xscan', 'cscan',
      &     'hcth147@tz2p',
-     W     'wb97','wb97x','wb97x-d3'/
+     W     'wb97','wb97x','wb97x-d3',
+     D     'xrevwpbesr', 'xrevwpbe' /
 c     becke97-d, ssb-d
       logical disp, dumdirect
       integer ivdw
@@ -279,6 +280,7 @@ c
      &     9710,9720,9650,9660,9615,9616,
      &  1947,
      &  9410,9420,9430,
+     &  8540, 8541,
      &     1999 ) ind
 
 
@@ -3876,6 +3878,70 @@ c
       endif
       if (.not. inp_f(xfac(43))) then
          xfac(43) = 1.0d0
+      endif
+c
+      goto 10
+c
+c     xwpbesr; HSE screened exchange from PBE exchange hole
+c
+ 8540 if (inp_a(test)) then
+         if (inp_compare(.false.,'local', test)) then
+            write(LuOut,*)' xwpbeh "local" is equivalent to the',
+     &                ' slater exchange local functional. '
+            write(LuOut,*)' Resubmit using slater exchange. '
+            call errquit(' xc_inp - functional description ',0,
+     &       INPUT_ERR)
+         elseif (inp_compare(.false.,'nonlocal', test) ) then
+            nlxfac(79) = .true.
+         else
+c
+c           assume total wanted
+c
+            lxfac(79) = .true.
+            nlxfac(79) = .true.
+            call inp_prev_field()
+         endif
+      else
+c
+c        assume total wanted
+c
+         lxfac(79) = .true.
+         nlxfac(79) = .true.
+      endif
+      if (.not. inp_f(xfac(79))) then
+         xfac(79) = 1.0d0
+      endif
+c
+      goto 10
+c
+c     xwpbesrlr; HSE exchange from PBE exchange hole
+c
+ 8541 if (inp_a(test)) then
+         if (inp_compare(.false.,'local', test)) then
+            write(LuOut,*)' xwpbesrlr "local" is equivalent to the',
+     &                ' slater exchange local functional. '
+            write(LuOut,*)' Resubmit using slater exchange. '
+            call errquit(' xc_inp - functional description ',0,
+     &       INPUT_ERR)
+         elseif (inp_compare(.false.,'nonlocal', test) ) then
+            nlxfac(80) = .true.
+         else
+c
+c           assume total wanted
+c
+            lxfac(80) = .true.
+            nlxfac(80) = .true.
+            call inp_prev_field()
+         endif
+      else
+c
+c        assume total wanted
+c
+         lxfac(80) = .true.
+         nlxfac(80) = .true.
+      endif
+      if (.not. inp_f(xfac(80))) then
+         xfac(80) = 1.0d0
       endif
 c
       goto 10

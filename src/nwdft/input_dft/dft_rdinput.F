@@ -684,6 +684,8 @@ c
       xname(76)='                wb97 Exchange Functional'
       xname(77)='               wb97x Exchange Functional'
       xname(78)='            wb97x-d3 Exchange Functional'
+      xname(79)='         rev-wPBE-SR Exchange Functional'
+      xname(80)='      rev-wPBE-SR+LR Exchange Functional'
 c
 c     Exchange-Correlation combination functional name defaults.
 c
