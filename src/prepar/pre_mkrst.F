@@ -170,6 +170,8 @@ c
       if(.not.ma_push_get(mt_int,msa,'istat',l_istat,i_istat))
      + call md_abort('Memory allocation failed for istat',9999)
 c
+      box = 0d0
+
       lslvnt=.false.
       ldistr=.false.
       lsolva=.false.
