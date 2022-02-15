@@ -236,7 +236,9 @@ c
       external zora_recalcc
       logical x2c_noatm
       external x2c_noatm
-
+c
+      integer g_bq
+c
 c MN solvation models -->
 c
       double precision gcds, gspol, espol, gspoldyn, gspolneq
@@ -1154,6 +1156,14 @@ c  End of lcdft
        if(.not.ga_duplicate(g_fock, g_focks(2), ' beta fock'))
      &    call errquit('dft_scf:failed duplicate',g_fock, GA_ERR)
       endif
+
+cDMR  test for QM/MM
+      if (.not.ga_duplicate(g_fock, g_bq, 'BQ POT'))
+     &  call errquit('dft_scf: failed duplicate',g_bq, GA_ERR)
+      call ga_zero(g_bq) 
+      call int_1e_ga(ao_bas_han, ao_bas_han, g_bq,
+     &                 'bq_pot', oskel)
+
  3000 continue
 c
 c     ----- dft scf proper -----
@@ -1283,9 +1293,10 @@ c     remove flipping to avoid multiple operation in geom opt.
      ,     i_degen,g_rho_exact,g_tmp_exact, g_addit_exact,
      ,     n_levels, act_levels, oprint_time,
 cc AJL/Begin/FDE
-c     &     g_rel,g_frozemb)
-     &     g_rel,g_frozemb,g_vxc_fde,g_xcinv_fde,g_dens_fde,eelec)
+c     &     g_zora_sf,g_frozemb)
+     &     g_rel,g_frozemb,g_vxc_fde,g_xcinv_fde,g_dens_fde,eelec,!)
 cc AJL/End
+     .     g_bq)
       if(util_print('dft timings', print_high))
      &      time2=util_wallsec()  ! end fock matrix build time
 c
@@ -2529,6 +2540,10 @@ C
       if (ipol.gt.1) then
          if (.not. ga_destroy(g_focks(2))) call errquit
      &           ('dft_scf: could not destroy g_focks2', 0, GA_ERR)
+      end if
+      if (ipol.gt.1) then
+         if (.not. ga_destroy(g_bq)) call errquit
+     &           ('dft_scf: could not destroy g_bq', 0, GA_ERR)
       end if
 c
 c     == if frozen embedding ==

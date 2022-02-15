@@ -9,9 +9,9 @@
      ,     i_degen,g_rho_exact,g_tmp_exact, g_addit_exact,
      ,     n_levels, act_levels, oprint_time,
 cc AJL/Begin/FDE
-c     ,     g_rel_sf,g_frozemb)
-     ,     g_rel_sf,g_frozemb,g_vxc_fde,g_xcinv_fde,g_dens_fde,eelec )
+     ,     g_rel_sf,g_frozemb,g_vxc_fde,g_xcinv_fde,g_dens_fde,eelec,! )
 cc AJL/End
+     .     g_bq)
 c     
 c     $Id$
 c     
@@ -34,6 +34,7 @@ c
       integer g_focks(2)
       integer g_xcinv
       integer g_tmp,g_nq,g_wght,g_xyz
+      integer g_bq
       integer g_rho_exact,g_tmp_exact, g_addit_exact
       integer rtdb ! [in]
       integer natoms ! [in]
@@ -222,8 +223,9 @@ c        call int_1e_ga(ao_bas_han, ao_bas_han, g_fock,
 c     &                 'bq_pot', oskel)
 
         Ecore = ga_ddot(g_dens(1), g_focks(1))
-        call int_1e_ga(ao_bas_han, ao_bas_han, g_focks(1),
-     &                 'bq_pot', oskel)
+        call ga_add(1d0,g_focks(1),1d0,g_bq,g_focks(1))
+c        call int_1e_ga(ao_bas_han, ao_bas_han, g_focks(1),
+c     &                 'bq_pot', oskel)
 c Copy to g_focks(2), as this is identical for both channels
         if (ecp_channels.gt.1) call ga_copy(g_focks(1), g_focks(2))
 c
@@ -248,11 +250,14 @@ c
      &        time1_pot=util_cpusec()   ! start time
 cc AJL/Begin/SPIN ECPs
 c        call int_1e_ga(ao_bas_han, ao_bas_han, g_fock,
+        call ga_add(1d0,g_focks(1),1d0,g_bq,g_focks(1))
         call int_1e_ga(ao_bas_han, ao_bas_han, g_focks(1), 
-     &                 'potential', oskel)
-        if (ecp_channels.gt.1)
-     &    call int_1e_ga(ao_bas_han, ao_bas_han, g_focks(2),
-     &                   'potential_beta', oskel)
+     &                 'potential0', oskel)
+        if (ecp_channels.gt.1) then
+          call ga_add(1d0,g_focks(2),1d0,g_bq,g_focks(2))
+          call int_1e_ga(ao_bas_han, ao_bas_han, g_focks(2),
+     &                   'potential0_beta', oskel)
+        endif
 cc AJL/End
         if(util_print('dft timings', print_high))
      &        time2_pot=util_cpusec()   ! end time
