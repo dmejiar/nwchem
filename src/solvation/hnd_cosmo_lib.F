@@ -439,6 +439,12 @@ c
       double precision cosff
       external         cosff
 
+      character*16 aname
+      logical daniel, geom_cart_get
+      integer k_dmr1, k_dmr2, k_dmr3
+      integer l_dmr1, l_dmr2, l_dmr3
+      external geom_cart_get
+
       logical  sym_atom
       external sym_atom
 
@@ -452,13 +458,21 @@ c
 c     <-- MN solvation models
 c
       double precision dist, xi, yi, zi, xj, yj, zj, rin, rout, alphai
+      double precision rsw,alpha
       parameter (alphai = 0.5d0)
       dist(xi,yi,zi,xj,yj,zj)=sqrt((xj-xi)**2+(yj-yi)**2+(zj-zi)**2)
-      rin(iat)=ratm(iat)*(1.0d0-alphai*gammas*sqrt(0.25d0**minbem))
-      rout(iat)=ratm(iat)*(1.0d0+(1.0d0-alphai)*gammas*
-     &                     sqrt(0.25d0**minbem))
+c      rin(iat)=ratm(iat)*(1.0d0-alphai*gammas*sqrt(0.25d0**minbem))
+c      rout(iat)=ratm(iat)*(1d0 + (1d0-alphai)*
+c     & gammas*sqrt(0.25d0**minbem))
+      rsw(iat)=gammas*ratm(iat)*sqrt(14d0/dble(nseg))
+      alpha(iat)=0.5d0+sqrt(dble(nseg)/14d0)/gammas -
+     &                 sqrt( dble(nseg)/14d0/gammas**2 - 1d0/28d0)
+c      rin(iat)=ratm(iat) - alpha(iat)*rsw(iat)
+      rin(iat)=ratm(iat)
+      rout(iat)=ratm(iat) + (1d0-alpha(iat))*rsw(iat)
 c
       dbug=.false.
+      daniel=.true.
       pi = acos(-1.0d0)
 c
       if(ga_nodeid().eq.0) then
@@ -711,13 +725,6 @@ c
       volmol=0d0
       ief   =0
 
-      if(dbug.and.ga_nodeid().eq.0) then
-        write(luout,*)
-        write(luout,'(" --- Geometry including SAS --- ")')
-        do iat=1,nat
-          write(luout,'(3F12.6)') (xyzatm(i,iat)*cau2ang,i=1,3)
-        enddo
-      endif
 
       do iat=1,nat
          if(ratm(iat).ne.0d0) then
@@ -742,10 +749,6 @@ c
                     do i=1,3
                      dbl_mb(k_efcc+3*(ief-1)+i-1)=xyzspa(i,iseg,iat)
                     enddo
-                  endif
-                  if(dbug.and.ga_nodeid().eq.0) then
-                    write(luout,'(3F12.6)') 
-     1              (dbl_mb(k_efcc+3*(ief-1)+i-1)*cau2ang,i=1,3)
                   endif
                   ipp=numpps(iseg,iat)
                   if (do_cosmo_model.eq.DO_COSMO_KS) then
@@ -776,9 +779,42 @@ c
                   dbl_mb(k_efczz+ief-1) =zetai
                endif
             enddo
-            if(dbug.and.ga_nodeid().eq.0) write(luout,*)
          endif
       enddo
+
+      if(daniel.and.ga_nodeid().eq.0) then
+
+       if(.not.ma_push_get(mt_dbl,nat*3,'coord',l_dmr1,k_dmr1))
+     & call errquit('malloc k_coscoor failed',
+     &              911,MA_ERR)
+       if(.not.ma_push_get(mt_dbl,nat,'cosmo z',l_dmr2,k_dmr2))
+     & call errquit('malloc k_coszan failed',911,MA_ERR)
+       if(.not.ma_push_get(mt_byte,nat*16,'tags',l_dmr3,k_dmr3)) 
+     & call errquit('malloc k_costag failed',911,MA_ERR)
+c
+       if(.not.geom_cart_get(geom,nat,byte_mb(k_dmr3),
+     &   dbl_mb(k_dmr1),dbl_mb(k_dmr2))) call errquit
+     $    (' geom_cart_get failed.',911, GEOM_ERR)
+        write(luout,*)
+        write(luout,'(" --- Geometry including SAS --- ")')
+        write(luout,*) nat+nefc
+        write(luout,*)
+        do iat=1,nat
+         call util_set_ma_char_arrays(16,
+     $                                byte_mb(k_dmr3+16*(iat-1)),
+     $                                aname)
+          write(luout,'(A16,3F12.6)')aname,(xyzatm(i,iat)*cau2ang,i=1,3)
+        enddo
+        do ief=1,nefc
+          write(luout,'("X",15X,3F12.6)') 
+     1     (dbl_mb(k_efcc+3*(ief-1)+i-1)*cau2ang,i=1,3)
+        enddo
+
+        if (.not.ma_chop_stack(l_dmr1))
+     &    call errquit('could not chop stack',911,MA_ERR)   
+        write(luout,*)
+      endif
+
       srfmol=srfmol*(cau2ang**2)
       volmol=volmol*(cau2ang**3)
 c
