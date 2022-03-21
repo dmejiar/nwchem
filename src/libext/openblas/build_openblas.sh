@@ -172,10 +172,10 @@ fi
 #we want openblas to use pthreads and not openmp.
 #but NWChem and OpenBLAS both use USE_OPENMP
 #disable USE_OPENMP if set and re-enable it later
-if [[  ! -z "${USE_OPENMP}" ]]; then
-    unset USE_OPENMP
-    NWCHEM_USE_OPENMP=1
-fi
+#if [[  ! -z "${USE_OPENMP}" ]]; then
+#    unset USE_OPENMP
+#    NWCHEM_USE_OPENMP=1
+#fi
 echo make $FORCETARGET LAPACK_FPFLAGS=$LAPACK_FPFLAGS_VAL  INTERFACE64=$sixty4_int BINARY=$binary NUM_THREADS=128 NO_CBLAS=1 NO_LAPACKE=1 DEBUG=0 USE_THREAD=$THREADOPT  libs netlib -j4
 echo
 echo OpenBLAS compilation in progress
@@ -197,9 +197,9 @@ fi
 mkdir -p ../../lib
 cp libopenblas.a ../../lib/libnwc_openblas.a
 #make PREFIX=. install
-if [[  ! -z "${NWCHEM_USE_OPENMP}" ]]; then
-    export USE_OPENMP=1
-fi
+#if [[  ! -z "${NWCHEM_USE_OPENMP}" ]]; then
+#    export USE_OPENMP=1
+#fi
 if [[ -n ${FCORG} ]]; then
     FC=${FCORG}
 fi
