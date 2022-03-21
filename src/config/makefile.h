@@ -278,6 +278,7 @@ ifdef BUILD_OPENBLAS
 endif
 
 
+
 ifdef BUILD_SCALAPACK
     NW_CORE_SUBDIRS += libext
     ifneq ($(or $(SCALAPACK),$(SCALAPACK_LIB)),)
@@ -3633,6 +3634,23 @@ ifdef TCE_HIP
     DEFINES += -DTCE_HIP $(shell hipconfig --cpp_config)
     CORE_LIBS += $(HIP_LIBS)
     EXTRA_LIBS += -lstdc++
+endif
+
+
+ifdef BUILD_OPENBLAS
+    ifeq ($(USE_OPENMP),1)
+        ifeq ($(_FC),pgf90)
+            _LOMP = -lnvomp
+        else ifeq ($(_FC),gfortran)
+            _LOMP = -lgomp
+        else ifeq ($(_FC),ifort)
+            _LOMP = -liomp5
+        endif
+
+        BLASOPT += $(_LOMP)
+        LAPACK_LIB += $(_LOMP)
+        BLAS_LIB += -$(_LOMP)
+    endif
 endif
 
 ifdef USE_F90_ALLOCATABLE
