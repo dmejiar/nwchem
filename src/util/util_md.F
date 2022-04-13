@@ -1598,12 +1598,12 @@ c
       character*255 card
       integer icode
       if(ga_nodeid().eq.0) then
-      write(luout,1000) 0,string,icode
- 1000 format(/,1x,10('*'),/,' * ',i3,': ',a,i5,/,1x,10('*'))
+      write(luout,1000) 0,trim(string),icode
+ 1000 format(/,1x,10('*'),/,' * ',i3,': ',a,i7,/,1x,10('*'))
       card=' '
       else
-      write(card,1001) ga_nodeid(),string,icode
- 1001 format(' * ',i3,': ',a,i5,' * ')
+      write(card,1001) ga_nodeid(),trim(string),icode
+ 1001 format(' * ',i5,': ',a,i7,' * ')
       endif
       call ga_error(card,icode)
       return

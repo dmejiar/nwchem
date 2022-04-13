@@ -137,16 +137,17 @@ c         Check whether the length and text of the key on the card and
 c         the requested key match. If so, we have found the key and
 c         extract to corresponding value.
 c
-          if (lencrd.eq.lenkey.and.
-     +        card(istart:lencrd+istart).eq.key(1:lenkey)) then
-            indexv=lencrd+istart+1
-            rightcard=card(indexv:255)
-            istart=util_getblnk(rightcard,255)
-            lencrd=index(rightcard(istart:255),'#')-1
-            if (lencrd.le.-1) lencrd=255-istart+1
-            lencrd=inp_strlen(rightcard(istart:lencrd+istart-1))-1
-            value=rightcard(istart:lencrd+istart)
-            found=.true.
+          if (lencrd.eq.lenkey) then
+            if(card(istart:lencrd+istart).eq.key(1:lenkey)) then
+              indexv=lencrd+istart+1
+              rightcard=card(indexv:255)
+              istart=util_getblnk(rightcard,255)
+              lencrd=index(rightcard(istart:255),'#')-1
+              if (lencrd.le.-1) lencrd=255-istart+1
+              lencrd=inp_strlen(rightcard(istart:lencrd+istart-1))-1
+              value=rightcard(istart:lencrd+istart)
+              found=.true.
+            endif
           endif
         enddo ! while(.not.found)
  999    close(unit=69)

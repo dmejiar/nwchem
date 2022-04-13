@@ -142,10 +142,8 @@ c
       if(.not.ma_pop_stack(l_sti))
      + call md_abort('Failed to deallocate sti',0)
 c
-      if(lqhop) then
       if(.not.ma_pop_stack(l_mprot))
      + call md_abort('Failed to deallocate mprot',0)
-      endif
 c 
       if(.not.ma_pop_stack(l_snam))
      + call md_abort('Failed to deallocate snam',0)

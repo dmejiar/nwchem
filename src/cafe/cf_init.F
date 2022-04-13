@@ -229,10 +229,8 @@ c
       if(.not.ma_push_get(mt_byte,16*nsatot,'snam',l_snam,i_snam))
      + call md_abort('Failed to allocate snam',me)
 c
-      if(lqhop) then
       if(.not.ma_push_get(mt_int,mseq,'mprot',l_mprot,i_mprot))
      + call md_abort('Failed to allocate mprot',me)
-      endif
 c
       if(npgdec.gt.1) then
       if(.not.ma_push_get(mt_dbl,6*nsatot,'sti',l_sti,i_sti))
