@@ -146,11 +146,17 @@ c
       double precision rin, rout, alphai, xyzff
       integer iat
       double precision t0
+      double precision rsw, alpha
       parameter (alphai = 0.5d0)
+c      rin(iat)=dbl_mb(k_rad-1+iat)
+c     &        *(1.0d0-alphai*gammas*sqrt(0.25d0**minbem))
+c      rout(iat)=dbl_mb(k_rad-1+iat)
+c     &         *(1.0d0+(1.0d0-alphai)*gammas*sqrt(0.25d0**minbem))
+      rsw(iat)=gammas*dbl_mb(k_rad-1+iat)*sqrt(14d0/ptspatm)
+      alpha(iat)=0.5d0+sqrt(ptspatm/14d0)/gammas -
+     &                 sqrt(ptspatm/14d0/gammas**2 - 1d0/28d0)
       rin(iat)=dbl_mb(k_rad-1+iat)
-     &        *(1.0d0-alphai*gammas*sqrt(0.25d0**minbem))
-      rout(iat)=dbl_mb(k_rad-1+iat)
-     &         *(1.0d0+(1.0d0-alphai)*gammas*sqrt(0.25d0**minbem))
+      rout(iat)=dbl_mb(k_rad-1+iat) + (1d0-alpha(iat))*rsw(iat)
 
 c     ---- -cosmo- gradient term -----
       logical odbug

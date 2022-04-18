@@ -182,7 +182,12 @@
         integer iri
         double precision det
 
-
+#ifdef GW_NORFP
+        det = 1d0
+        do iri=1,nri
+          det = det*pi(iri,iri)**2
+        enddo
+#else
         if ( mod(nri,2) .eq. 0 ) then
           det = 1d0
           do iri=1,nri/2
@@ -194,6 +199,7 @@
             det = det*(pi(iri-1,iri)*pi(iri,iri))**2
           enddo
         endif
+#endif
 
         ecrpa = log(det)
 
@@ -287,9 +293,22 @@ c     information available in CDGW.
         iri = (nri*(nri+1))/2/ldpi
 
         if (.not.diag) then
+#ifdef GW_NORFP
+          call dpotri('l',nri,vx,info)
+#else
           call dpftri('n','l',nri,vx,info)
+#endif
         endif
 
+#ifdef GW_NORFP
+        do iri=1,nri
+          do jri=1,iri-1
+            ecgm = ecgm + 2d0*pi(jri,iri)*vx(jri,iri)
+          enddo
+          ecgm = ecgm + (pi(iri,iri)-1d0)*(vx(iri,iri)-1d0)
+          ecrpa = ecrpa - pi(iri,iri)
+        enddo
+#else
         if ( mod(nri,2) .eq. 0 ) then
           do iri=1,nri/2
             do jri=1,iri-1
@@ -315,6 +334,7 @@ c     information available in CDGW.
           enddo
           ecgm = ecgm + dble(nri)
         endif
+#endif
 
         if (diag) then
           ecrpa = 0d0

@@ -191,6 +191,7 @@ c
 
             tauN = tau(n,1)*facttwo
             tauW = F18*g2*rrho
+            tauN = max(tauN,tauW)
             tauU = 0.3d0*Pconst*rhoval**F53
 c     
 c     Evaluate the Fx
@@ -210,7 +211,7 @@ c
             Hnum = hden + rK1*x
             H = Hnum/Hden
 
-            if (p14.lt.0.002d0) then
+            if (p14.lt.0.001d0) then
               exp3 = 0d0
             else
               exp3 = dexp(-rA1/p14)

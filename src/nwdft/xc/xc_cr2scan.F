@@ -214,6 +214,8 @@ c
            tautot=tau(n,1)+tau(n,2)
          endif
 
+         tautot = max(tautot,tvw)
+
          alpha = (tautot - tvw)/(tueg + eta*tvw)
          oma = 1d0 - alpha
          oma2 = oma*oma

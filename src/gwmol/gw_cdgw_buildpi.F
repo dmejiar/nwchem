@@ -64,29 +64,55 @@ C     Note that we actually compute -\Pi.
           !
           ! Scale ERIs with factor in square brackets of Equation (39)
           !
-!$omp     parallel do simd schedule(static) collapse(2)
+#ifndef GW_OFFLOAD
+!$omp     parallel do simd schedule(static)
           do ipole=1,npoles(1)
-          do iri=1,nri
-            ovup(iri,ipole) = ovup(iri,ipole)*factor(ipole,1)
-          enddo
+            ovup(:,ipole) = ovup(:,ipole)*factor(ipole,1)
           enddo
 !$omp     end parallel do simd
+#endif
 
+#ifdef GW_OFFLOAD
+!$omp     teams loop collapse(2)
+          do iri=1,nri
+            do jri=1,nri
+              pi(jri,iri) = 0d0
+            enddo
+          enddo
+
+!$omp     teams loop reduction(+: pi) collapse(3)
+          do ipole=1,npoles(1)
+            do iri=1,nri
+              do jri=1,nri
+                pi(jri,iri) = pi(jri,iri) + ovup(iri,ipole)*
+     $                        ovup(jri,ipole)*factor(ipole,1)
+              enddo
+            enddo
+          enddo
+#else
+#ifdef GW_NORFP
+          !
+          ! Use DSYRK
+          !
+          call dsyrk('l','n',nri,npoles(1),scal,ovup,nri,0d0,pi,ldpi)
+#else
           !
           ! DSFRK is the RFP version of DSYRK
           !
           call dsfrk('n','l','n',nri,npoles(1),scal,ovup,nri,0d0,pi)
+#endif
+#endif
 
           !
           ! Back-transform ERIs, since we are going to need them again
           !
-!$omp     parallel do simd schedule(static) collapse(2)
+#ifndef GW_OFFLOAD
+!$omp     parallel do simd schedule(static)
           do ipole=1,npoles(1)
-          do iri=1,nri
-            ovup(iri,ipole) = ovup(iri,ipole)/factor(ipole,1)
-          enddo
+            ovup(:,ipole) = ovup(:,ipole)/factor(ipole,1)
           enddo
 !$omp     end parallel do simd
+#endif
 
         endif
 
@@ -98,27 +124,30 @@ C     Note that we actually compute -\Pi.
           !
           ! Scale ERIs with factor in square brackets of Equation (39)
           !
-!$omp     parallel do simd schedule(static) collapse(2)
+!$omp     parallel do simd schedule(static)
           do ipole=1,npoles(2)
-          do iri=1,nri
-            ovdw(iri,ipole) = ovdw(iri,ipole)*factor(ipole,2)
-          enddo
+            ovdw(:,ipole) = ovdw(:,ipole)*factor(ipole,2)
           enddo
 !$omp     end parallel do simd
 
+#ifdef GW_NORFP
+          !
+          ! DSFRK is the RFP version of DSYRK
+          !
+          call dsyrk('l','n',nri,npoles(2),scal,ovdw,nri,1d0,pi,ldpi)
+#else
           !
           ! DSFRK is the RFP version of DSYRK
           !
           call dsfrk('n','l','n',nri,npoles(2),scal,ovdw,nri,1d0,pi)
+#endif
 
           !
           ! Back-transform ERIs, since we are going to need them again
           !
-!$omp     parallel do simd schedule(static) collapse(2)
+!$omp     parallel do simd schedule(static)
           do ipole=1,npoles(2)
-          do iri=1,nri
-            ovdw(iri,ipole) = ovdw(iri,ipole)/factor(ipole,2)
-          enddo
+            ovdw(:,ipole) = ovdw(:,ipole)/factor(ipole,2)
           enddo
 !$omp     end parallel do simd
 
@@ -133,6 +162,11 @@ C     Note that we actually compute -\Pi.
         ! was obtained with DSFRK and LDPI will have the right value.
         !
         if (main) then
+#ifdef GW_NORFP
+          do iri=1,nri
+            pi(iri,iri) = pi(iri,iri) + 1d0
+          enddo        
+#else
           if ( mod(nri,2) .eq. 0 ) then
             do iri=1,nri/2
               pi(iri,iri) = pi(iri,iri) + 1d0
@@ -145,6 +179,7 @@ C     Note that we actually compute -\Pi.
               pi(iri,iri) = pi(iri,iri) + 1d0
             enddo
           endif
+#endif
         endif
 
 

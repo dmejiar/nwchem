@@ -108,11 +108,11 @@
           SigmaOld = Sigma(llmo+iqp-1,isp)
           Sigma_X  = Sigmax(llmo+iqp-1,isp)
 
-          if (eviter.lt.3) then
+          if (eviter.lt.10) then
             if (myul.lt.ulqp) then
-              Eout = Enew(llmo+iqp,isp) + 0.001d0
+              Eout = Enew(llmo+iqp,isp) + 0.002d0
             elseif (myll.gt.llqp) then
-              Eout = Enew(llmo+iqp-2,isp) - 0.001d0
+              Eout = Enew(llmo+iqp-2,isp) - 0.002d0
             endif
           endif
 
@@ -155,7 +155,11 @@ c
             values(iter) = Ein
             errors(iter) = residual
 
-            radius = min(maxradius,0.1d0*maxradius/residual**2)
+            if (abs(residual).gt.0d0) then
+              radius = min(maxradius,0.1d0*maxradius/residual**2)
+            else
+              radius = maxradius
+            endif
 
             ! Find out if we have bracketed the solution
             if (iter.gt.1) then
