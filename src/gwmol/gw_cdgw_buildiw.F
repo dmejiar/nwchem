@@ -90,6 +90,10 @@ C
         ldpi = nri
       endif
       sizepi = (nri*(nri+1))/2
+#ifdef GW_NORFP
+      sizepi = nri**2
+      ldpi = nri
+#endif
 C
 C     If diag is .true., the inverse of the dielectric matrix
 C     will be obatined using eigendecomposition in GA.
@@ -227,7 +231,13 @@ c
 #ifdef GWCMPLX
         call ga_zgop(1038,dcpl_mb(k_pi),nri**2,'+')
 #else
+#ifdef GW_NORFP
+        call std2rfp(dbl_mb(k_pi),nri)
         call ga_dgop(1038,dbl_mb(k_pi),sizepi,'+')
+        call rfp2std(dbl_mb(k_pi),nri)
+#else
+        call ga_dgop(1038,dbl_mb(k_pi),sizepi,'+')
+#endif
 #endif
 
 #ifdef GWDEBUG
@@ -262,7 +272,11 @@ c
         if (diag) then
           call gw_invdiag(dbl_mb(k_vx),ldpi,nri,ecrpa,.true.)
         else
+#ifdef GW_NORFP
+          call dpotrf('l',nri,dbl_mb(k_pi),info)
+#else
           call dpftrf('n','l',nri,dbl_mb(k_pi),info)
+#endif
         endif
 #endif
 #ifdef GWDEBUG
@@ -386,12 +400,17 @@ c
      $                   dcpl_mb(k_sol),nri,info)
 #else
               ! Copy the ERIs into the solution array
-              call gw_copy(nri*iwidx(0,jmo,isp),dbl_mb(tmp),
-     $                     dbl_mb(k_sol))
-
+              call dcopy(nri*iwidx(0,jmo,isp),dbl_mb(tmp),1,
+     $                   dbl_mb(k_sol),1)
+#ifdef GW_NORFP
+              ! Obtain \epsilon^{-1/2} (Q|mn)
+              call dtrsm('l','l','n','n',nri,iwidx(0,jmo,isp),1d0,
+     $                    dbl_mb(k_pi),nri,dbl_mb(k_sol),nri)
+#else
               ! Obtain \epsilon^{-1/2} (Q|mn)
               call dtfsm('n','l','l','n','n',nri,iwidx(0,jmo,isp),1d0,
      $                   dbl_mb(k_pi),dbl_mb(k_sol),nri)       
+#endif
 #endif
             endif
 
@@ -512,12 +531,6 @@ c
       end subroutine
 
 
-
-      subroutine gw_copy(n,from,to)
-      integer n
-      double precision,dimension(n) :: from, to
-      to(:) = from(:)
-      end subroutine
 
       double precision function gw_ddot(n,a,b)
       integer n

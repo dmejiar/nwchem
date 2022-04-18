@@ -3702,20 +3702,15 @@ ifdef USE_F90_ALLOCATABLE
 endif
 
 ifdef GWCMPLX
-  ifdef GWEN
-    errorgw:
-$(info  GWCMPLX and GWEN are incompatible )
-$(error )
-  endif
   DEFINES += -DGWCMPLX
-endif
-
-ifdef GWEN
-  DEFINES += -DGWEN
 endif
 
 ifdef GWDEBUG
   DEFINES += -DGWDEBUG
+endif
+
+ifdef GW_NORFP
+  DEFINES += -DGW_NORFP
 endif
 
 # lower level libs used by communication libraries 

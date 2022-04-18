@@ -187,7 +187,11 @@ c           Comput self-energy
 
             values(iter) = Ein
             errors(iter) = residual
-            radius = min(maxradius,0.1d0*maxradius/residual**2)
+            if (abs(residual).gt.0d0) then
+              radius = min(maxradius,0.1d0*maxradius/residual**2)
+            else
+              radius = maxradius
+            endif
 
             ! Find out if we have bracketed the solution
             if (iter.gt.1) then

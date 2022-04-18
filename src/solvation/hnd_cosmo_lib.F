@@ -459,14 +459,20 @@ c
 c     <-- MN solvation models
 c
       double precision dist, xi, yi, zi, xj, yj, zj, rin, rout, alphai
+      double precision rsw, alpha
       parameter (alphai = 0.5d0)
       logical oprint_debug
       logical oprint_molsurf
 c
       dist(xi,yi,zi,xj,yj,zj)=sqrt((xj-xi)**2+(yj-yi)**2+(zj-zi)**2)
-      rin(iat)=ratm(iat)*(1.0d0-alphai*gammas*sqrt(0.25d0**minbem))
-      rout(iat)=ratm(iat)*(1.0d0+(1.0d0-alphai)*gammas*
-     &                     sqrt(0.25d0**minbem))
+c      rin(iat)=ratm(iat)*(1.0d0-alphai*gammas*sqrt(0.25d0**minbem))
+c      rout(iat)=ratm(iat)*(1.0d0+(1.0d0-alphai)*gammas*
+c     &                     sqrt(0.25d0**minbem))
+      rsw(iat)=gammas*ratm(iat)*sqrt(14d0/ptspatm)
+      alpha(iat)=0.5d0+sqrt(ptspatm/14d0)/gammas -
+     &                 sqrt(ptspatm/14d0/gammas**2 - 1d0/28d0)
+      rin(iat)=ratm(iat)
+      rout(iat)=ratm(iat) + (1d0-alpha(iat))*rsw(iat)
 c
       oprint_debug = util_print("cosmo_cossas_debug",print_debug).and.
      D     (ga_nodeid().eq.0)
