@@ -66,6 +66,7 @@ c
 c
       if (pars%me.eq.0) write(luout,9000)
  9000 format(10x,'Computing 2-center integrals')
+      call util_flush(luout)
 c
       call dft_get2eri(cd_bas_han, g_2ceris, .false.)
 c
@@ -73,6 +74,7 @@ c     Obtain inverse Cholesky factor
 c
       if (pars%me.eq.0) write(luout,9010)
  9010 format(10x,'Computing Inverse Cholesky factor')
+      call util_flush(luout)
 c
       call ga_sync()
       call ga_chol_inv_seq(g_2ceris, g_2cinv, info)
@@ -147,6 +149,7 @@ c
 c
       if (pars%me.eq.0) write(luout,9020)
  9020 format(10x,'Computing 3-center integrals')
+      call util_flush(luout)
 
       lvecs = nbf_ao*nmo*pars%ipol
       if (.not.ma_alloc_get(mt_dbl,lvecs,'MOVECS',l_vecs,k_vecs))
@@ -222,9 +225,8 @@ c
 c
 #ifdef GWDEBUG
       if (pars%me.eq.0) write(*,*) '  Transform ERIs'
+      call util_flush(luout)
 #endif
-
-      call ga_sync()
 
       ok = ma_free_heap(l_vecs)
       if (.not.ok)
@@ -239,6 +241,7 @@ c
       timer = util_wallsec()
 #ifdef GWDEBUG
       if (pars%me.eq.0) write(*,*) '  Distribute ERIs'
+      call util_flush(luout)
 #endif
 
       addr = k_mo
@@ -269,6 +272,7 @@ c
       ok = ma_free_heap(l_mo)
 #ifdef GWDEBUG
       if (pars%me.eq.0) write(*,*) '  Read inverse'
+      call util_flush(luout)
 #endif
 c
       if (.not.ma_alloc_get(mt_dbl,nri**2,'RI temporary',l_tmp,k_tmp))
@@ -284,6 +288,7 @@ c
 
 #ifdef GWDEBUG
       if (pars%me.eq.0) write(*,*) '  Orthogonalize ERIs'
+      call util_flush(luout)
 #endif
       do isp=1,pars%ipol
         if (pars%nstates(isp).eq.0) cycle
@@ -336,6 +341,9 @@ c
 #ifdef USE_OPENMP
       call util_blas_set_num_threads(1)
 #endif
+
+      ok = ma_verify_allocator_stuff()
+      call util_flush(luout)
       return
       end subroutine
 c

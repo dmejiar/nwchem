@@ -73,6 +73,7 @@ c     Obtain Vxc
 c
       if (main) write(luout,9000)
  9000 format(10x,'Computing Vxc')
+      call util_flush(luout)
 
       timer = util_wallsec()
 
@@ -89,6 +90,7 @@ c     Obtain Sigma_x
 c
       if (main) write(luout,9010)
  9010 format(10x,'Computing Sigma_x')
+      call util_flush(luout)
 
       timer = util_wallsec()
 
@@ -216,6 +218,7 @@ c     Obtain Screened Coulomb matrices on imaginary axis
 c
       if (main) write(luout,9030)
  9030 format(10x,'Computing W(iw) on the imaginary grid')
+      call util_flush(luout)
 c
       timer = util_wallsec()
 
@@ -247,6 +250,7 @@ c
 
       if (main) write(luout,9050)
  9050 format(10x,'Solving quasiparticle equations')
+      call util_flush(luout)
 
       if (pars%graph) then
         call gw_cdgw_graph(pars,dbl_mb(kSigmax),dbl_mb(kSigma),
