@@ -137,13 +137,15 @@ c     !
           SigmaOld = Sigma(llmo+iqp-1,isp)
           Sigma_X  = Sigmax(llmo+iqp-1,isp)
 
-          if (eviter.lt.10) then
+c          if (eviter.lt.4) then
             if (myul.lt.ulqp) then
-              Eout = Enew(llmo+iqp,isp) + 0.002d0
+              Eout = Enew(llmo+iqp,isp) - 0.005d0
             elseif (myll.gt.llqp) then
-              Eout = Enew(llmo+iqp-2,isp) - 0.002d0
+              Eout = Enew(llmo+iqp-2,isp) + 0.005d0
+            else 
+              Eout = Eout + sign(0.005d0,Eout)
             endif
-          endif
+c          endif
 
           bracket = .false.
           const = Eold(llmo+iqp-1,isp) + Sigma_X - sigmaold

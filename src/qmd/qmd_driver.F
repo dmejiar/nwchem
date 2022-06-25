@@ -33,6 +33,9 @@ c
 c
       integer l_act, k_act            ! active atoms
 c
+      integer l_q, k_q                ! charges
+      integer l_rcov, k_rcov          ! covalent radii
+
       integer nat                     ! number of atoms
       integer nactive                 ! number of active atoms
       integer nstep_nucl              ! total nuclear steps
@@ -80,6 +83,7 @@ c     Surface Hopping
       logical do_property                ! property flag
       logical do_tddft                   ! tddft flag
       logical do_freq                    ! frequency flag
+      logical do_frag                    ! fragmentation flag
       logical do_tdks                    ! TDKS flag
       logical tda                        ! TDA flag
       logical deco                       ! decoherence flag
@@ -91,6 +95,9 @@ c
       logical do_none
       logical dip_exists
       logical restart
+c
+      logical fragment, stopnow
+      integer fragstep
 c
       character*32 pname
       character*32 ext_forces
@@ -127,6 +134,9 @@ c     preliminaries
       dipole(1) = 0.d0
       dipole(2) = 0.d0
       dipole(3) = 0.d0
+      fragment = .false.
+      stopnow = .false.
+      fragstep = 0
 c
 c     check if we need cavity constraints
       if(.not.rtdb_get(rtdb,'qmd:cavity',mt_log,1,do_cavity))
@@ -145,6 +155,10 @@ c
      E       ext_forces='none'
       if(ga_nodeid().eq.0) write(6,*) ' Ext forces = ',
      E     ext_forces(1:inp_strlen(ext_forces))
+c
+c     check for fragmentation flag
+      if (.not.rtdb_get(rtdb,'qmd:frag',mt_log,1,do_frag))
+     &  do_frag = .false.
 c
 c     get xyzfileunit
       if(.not.util_get_io_unit(xyzfileunit))
@@ -201,6 +215,14 @@ c
       if(.not.ma_push_get(mt_dbl,3*nat,'grads',l_g,k_g))  ! grads
      $   call errquit(pname//'ma_push_get grads',3*nat,MA_ERR)
       call dfill(3*nat, 0.0d0, dbl_mb(k_g), 1)
+
+      if(.not.ma_push_get(mt_dbl,50*nat,'charges',l_q,k_q)) ! charges
+     $   call errquit(pname//'ma_push_get charges',50*nat,MA_ERR)
+      call dfill(50*nat, 0.0d0, dbl_mb(k_q), 1)
+
+      if(.not.ma_push_get(mt_dbl,50*nat,'charges',l_rcov,k_rcov)) ! charges
+     $   call errquit(pname//'ma_push_get charges',nat,MA_ERR)
+      call dfill(nat, 0.0d0, dbl_mb(k_rcov), 1)
 c
 c     get the active atoms (also need a check for linearity)
 c     need to implement constraints
@@ -225,6 +247,9 @@ c     get the masses
       if (.not.geom_masses_get(geom,nat,dbl_mb(k_m)))  ! masses
      $   call errquit(pname//'geom_masses_get',geom,GEOM_ERR)
 c
+c     get covalent radii
+      if (do_frag) call qmd_covrad(nat, geom, dbl_mb(k_rcov))
+c
 c     Are we doing surface hopping?
 c      ***Surface hopping only works for DFT/TDDFT currently***
 c              ***Forces DFT/TDDFT calculation***
@@ -239,14 +264,16 @@ c              ***Forces DFT/TDDFT calculation***
      &                INPUT_ERR)
       end if
 
-      if(ext_forces.ne.'none')
-     $     call qmd_ext_init(nat,dt_nucl,kb_au*targ_temp,ext_forces)
 c
 c     get initial coordinates and velocities
       call qmd_coords_vels(rtdb,geom,nat,sstep_nucl,ekin,rstfilename,
      $       rstfileunit,dbl_mb(k_r),dbl_mb(k_v),dbl_mb(k_m),
      $       log_mb(k_act),nactive,restart,do_namd,state,nstates,
      $       dbl_mb(k_coup_p),dcpl_mb(k_zden))
+
+      if(ext_forces.ne.'none')
+     $     call qmd_ext_init(nat,dt_nucl,kb_au*targ_temp,ext_forces,
+     $                       sstep_nucl)
 
       if (do_namd) state_p=state
 c
@@ -440,8 +467,17 @@ c          for input and output, state runs from 0 to nstates-1
          write(luout,*)
          write(luout,*)
 c
+c        compute average partial atomic charge
+         if (do_frag) 
+     &     call qmd_charge(nat,istep_nucl-sstep_nucl+1,dbl_mb(k_q))
+c
+c        check for fragmentation
+         if (do_frag)
+     &     call qmd_fragment(nat,dbl_mb(k_r),dbl_mb(k_rcov),fragment,
+     &                      fragstep,stopnow,dt_nucl*cau2fs)
+
 c        check how often to write out the tracjectory
-         if (mod(istep_nucl,print_xyz).eq.0) then
+         if ((mod(istep_nucl,print_xyz).eq.0).or.stopnow) then
 c
 c          write trajectory
            call qmd_write_trj(xyzfilename,xyzfileunit,.true.,nat,
@@ -452,6 +488,7 @@ c        write restart
          call qmd_write_rst(rstfilename,rstfileunit,nat,istep_nucl,
      &                      ekin,geom,state,nstates,dcpl_mb(k_zden),
      &                      dbl_mb(k_coup),do_namd)
+
 c
         end if  ! ga_nodeid()
 c
@@ -482,6 +519,8 @@ c
 c       restart file has been written so set restart flag in RTDB
         if (.not.rtdb_put(rtdb,'qmd:restart',mt_log,1,.true.))
      &    call errquit(pname//'failed to write restart',0,RTDB_ERR)
+
+        if (stopnow) exit
 c
       end do  ! istep_nucl
   110 format(A20,I20)

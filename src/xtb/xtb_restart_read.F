@@ -11,7 +11,8 @@
 
       parameter(unitno=66)
 
-      open(unit=unitno,status='old',form='unformatted',file=restart_out)
+      open(unit=unitno,status='old',form='unformatted',file=restart_out,
+     $     position='rewind')
       do ispin=1,nspin
         call sread(unitno, wfn%qsh(1,ispin), int(calc%bas%nsh))
         call sread(unitno, wfn%qat(1,ispin), int(mol%nat))

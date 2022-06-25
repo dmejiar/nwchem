@@ -49,7 +49,8 @@
 	fock_2e_cam.o ga_get2eri.o scf_frozemb.o print_integrals.o \
 	rohf_hessv2_ext.o rohf_hessv3_ext.o uhf_hessv2_ext.o uhf_precond_ext.o \
 	scf_dump_evp_input.o \
-	cosmo_fock.o
+	cosmo_fock.o \
+        ga_orth_mos_dmr.o ga_orthog_dmr.o
 
 
  OBJ_OPTIMIZE = \
@@ -70,7 +71,7 @@
     USES_BLAS = ao_fock_2e.F ao_replicated.F fock_2e_file.F fock_2e_slab.F int2e_file.F \
                 movecs_lock.F movecs_phase.F riscf_fock.F riscf_trans.F rohf_diis.F \
                 rohf_k2cf.F scf_movecs.F scf_vec_guess.F uhf.F movecs_frag.F localize.F fock_2e.F \
-		fock_2e_cam.F int_1e_ga.F movecs_rotate.F vectors.F ga_get2eri.F
+		fock_2e_cam.F int_1e_ga.F movecs_rotate.F vectors.F ga_get2eri.F ga_orthog_dmr.F
 
 HEADERS = schwarz.fh cscfps.fh cfock.fh cscf.fh cint2efile.fh cfockmul.fh crohf.fh cosmo.fh cuhf.fh frozemb.fh
 

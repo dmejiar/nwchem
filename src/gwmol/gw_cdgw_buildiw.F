@@ -273,7 +273,7 @@ c
           call gw_invdiag(dbl_mb(k_vx),ldpi,nri,ecrpa,.true.)
         else
 #ifdef GW_NORFP
-          call dpotrf('l',nri,dbl_mb(k_pi),info)
+          call dpotrf('l',nri,dbl_mb(k_pi),nri,info)
 #else
           call dpftrf('n','l',nri,dbl_mb(k_pi),info)
 #endif

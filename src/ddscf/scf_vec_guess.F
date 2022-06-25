@@ -431,8 +431,14 @@ c
       endif
 c
       if (movecs_guess.eq.'restart') then
-         call ga_orthog_mos(basis, g_movecs)
-         if (scftype .eq. 'UHF') call ga_orthog_mos(basis, g_movecs(2))
+c         call ga_orthog_mos(basis, g_movecs)
+c         if (scftype .eq. 'UHF') call ga_orthog_mos(basis, g_movecs(2))
+         if (scftype.eq.'UHF') then
+           call ga_orthog_mos_dmr(basis, g_movecs, nalpha, nmo)
+           call ga_orthog_mos_dmr(basis, g_movecs(2), nbeta, nmo)
+         else
+           call ga_orthog_mos_dmr(basis, g_movecs, nclosed+nopen, nmo)
+         endif
       endif
       if(ssmear.lt.1.e-9 .and. (.not. fon)) then
 c

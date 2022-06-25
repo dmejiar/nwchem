@@ -6,8 +6,8 @@ c
       integer idum,IA,IM,IQ,IR,NTAB,NDIV
       double precision AM,EPS,RNMX
 c
-      parameter (IA=16807,IM=2147483647,AM=1./IM,IQ=127773,IR=2836,
-     & NTAB=32,NDIV=1+(IM-1)/NTAB,EPS=1.2e-7,RNMX=1.-EPS)
+      parameter (IA=16807,IM=2147483647,AM=1.d0/IM,IQ=127773,IR=2836,
+     & NTAB=32,NDIV=1+(IM-1)/NTAB,EPS=1.2e-7,RNMX=1.d0-EPS)
 c
       integer j,k,iv(NTAB),iy
       save iv,iy

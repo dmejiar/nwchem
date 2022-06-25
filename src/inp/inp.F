@@ -1189,6 +1189,7 @@ c
       end do
 10    continue
       s=i-1
+      if (s.eq.0) return
       do i=s+1,length
        a(i-s:i-s) = a(i:i) 
        a(i:i)=""

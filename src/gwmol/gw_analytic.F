@@ -202,6 +202,7 @@ c
           lSize = k_enew + (i-1)*nbf_ao
           efermi_new(i) = gw_efermi(dbl_mb(lSize),pars%nocc(i))
         enddo
+        efermi_new(:) = 0.0d0
         call gw_shift(dbl_mb(k_enew),dbl_mb(k_eold),efermi_new,
      $                nbf_ao,pars%nmo,pars%ipol)
         efermi(:) = efermi(:) + efermi_new(:)

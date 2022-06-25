@@ -65,7 +65,7 @@ C**********************************************************************
       do igl=1,ngl
         iomega = imag*dsqrt(x(igl))
         do jmo=1,mynmo
-          factor = 1d0/(vector(jmo) + iomega + etavec(jmo))
+          factor = 1d0/(vector(jmo) + iomega + 0d0*etavec(jmo))
           res(1) = res(1) - w(igl)*iw(jmo,igl)*factor
           res(2) = res(2) + w(igl)*iw(jmo,igl)*factor**2
         enddo

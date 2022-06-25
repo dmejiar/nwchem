@@ -1,4 +1,4 @@
-      subroutine qmd_ext_init(nat,dt_nucl,kbt,ext_forces)
+      subroutine qmd_ext_init(nat,dt_nucl,kbt,ext_forces,istep)
       implicit none
 #include "mafdecls.fh"
 #include "global.fh"
@@ -7,7 +7,7 @@
 #include "stdio.fh"
 #include "qmd_ext.fh"
       integer nat             ![in]
-      integer dt_nucl         ![in]
+      double precision dt_nucl![in]
       double precision kbt    ![in]
       character*(*) ext_forces
       logical input_exists
@@ -16,6 +16,9 @@ c     pass plumed initialization bits
       integer ga_comm
       integer*4 ga_comm4
       integer*4 nat4
+      integer istep
+
+      sstep = istep
       if(ext_forces(1:inp_strlen(ext_forces)).ne.'plumed') call
      E     errquit(' qmd_ext works only with plumed ',0,0)
       call ga_mpi_comm_pgroup_default(ga_comm)
@@ -31,8 +34,6 @@ c conversion factor between the length unit used in nwchem and nm
       call plumed_f_gcmd("setMDLengthUnits"//char(0),cau2nm)
 c conversion factor between the time unit used in nwchem and ps      
       call plumed_f_gcmd("setMDTimeUnits"//char(0),cau2fs/1000)
-c     kBT
-      call plumed_f_gcmd("setKbT"//char(0),kbt)
 
 c     get input file name
       call util_file_name('plumed.dat',.false.,.false.,extfrc_input)
@@ -56,6 +57,8 @@ c
             call errquit(' qmd_ext: missing plumed input',0,0)
          endif
       endif
+
+
 c     get output file name
       call util_file_name('plumed.out',.false.,.false.,extfrc_output)
 
@@ -69,6 +72,8 @@ c     get output file name
 #ifdef PLUMED_HASMPI 
       call plumed_f_gcmd("setMPIFComm"//char(0),ga_comm4)
 #endif
+c     kBT
+      call plumed_f_gcmd("setKbT"//char(0),kbt)
       call plumed_f_gcmd("setTimestep"//char(0),dt_nucl)
       write(luout,*) ' PPPPPPPPPPPPPPPPPPPPPPP '
       write(luout,*) ' NWChem PLUMED Interface '
@@ -79,6 +84,9 @@ c     get output file name
       call plumed_f_gcmd("init"//char(0),0)
       write(luout,*) ' PLUMED: init done'
       write(luout,*) ' PPPPPPPPPPPPPPPPPPPPPPP '
+
+
+
       endif
 #endif      
       return
@@ -91,6 +99,7 @@ c     get output file name
 #include "mafdecls.fh"
 #include "stdio.fh"
 #include "inp.fh"
+#include "qmd_ext.fh"
       integer nat                ! [in]
       integer istep_nucl         ! [in]
       double precision energy    ! [in]
@@ -105,17 +114,18 @@ c     pointer to current timestep
       if(ext_forces(1:inp_strlen(ext_forces)).ne.'plumed') call
      E     errquit(' qmd_ext works only with plumed ',0,0)
       if(ga_nodeid().eq.0) then
-      call plumed_f_gcmd("setStep"//char(0),istep_nucl)
+      call plumed_f_gcmd("setStep"//char(0),istep_nucl-sstep+1)
       call plumed_f_gcmd("setMasses"//char(0),m)
 c plumed uses forces not gradientes. double flip
 c first flip
         call dscal(3*nat, -1d0, g, 1)
-       if(ga_nodeid().eq.0) then
-          write(luout,*) '### forces before plumed ##'
-          do i=1,nat
-             write(luout,1) i,g(1,i),g(2,i),g(3,i)
-          enddo
-       endif
+c        if (lfac.ne.1.0d0) call dscal(3*nat, lfac, r, 1)
+c       if(ga_nodeid().eq.0) then
+c          write(luout,*) '### forces before plumed ##'
+c          do i=1,nat
+c             write(luout,1) i,g(1,i),g(2,i),g(3,i)
+c          enddo
+c       endif
       call plumed_f_gcmd("setForces"//char(0),g)
       call plumed_f_gcmd("setPositions"//char(0),r)
 
@@ -125,17 +135,18 @@ c      write(6,*) ' E ext', energy
        call plumed_f_gcmd("setEnergy"//char(0),energy)
 c     forces before plumed call
        call plumed_f_gcmd("calc"//char(0),0)
+       call dscal(3*nat, -1d0, g, 1)
+c       if (lfac.ne.1.0d0) call dscal(3*nat, 1.0d0/lfac, r, 1)
       endif
 c second sign flip
-      call dscal(3*nat, -1d0, g, 1)
 c     broadcast from 0
-      call ga_brdcst(2020,g,MA_sizeof(MT_DBL,1,MT_BYTE),0)
-       if(ga_nodeid().eq.0) then
-          write(luout,*) '### forces after plumed ##'
-          do i=1,nat
-             write(luout,1) i,g(1,i),g(2,i),g(3,i)
-          enddo
-       endif
+      call ga_brdcst(2020,g,MA_sizeof(MT_DBL,3*nat,MT_BYTE),0)
+c       if(ga_nodeid().eq.0) then
+c          write(luout,*) '### forces after plumed ##'
+c          do i=1,nat
+c             write(luout,1) i,g(1,i),g(2,i),g(3,i)
+c          enddo
+c       endif
  1     format(i5,3f12.6)
 c     check sign agreement with plumed ...
 #endif

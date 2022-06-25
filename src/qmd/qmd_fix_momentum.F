@@ -97,14 +97,14 @@ c      calculate angular momentum to be removed
         end do
        end do
 c      remove angular velocity from total velocity
-       do i = 1,n
-        v(1,i) = v(1,i) - (omega(2)*(r(3,i)-comr(3))
-     $           - omega(3)*(r(2,i)-comr(2)))
-        v(2,i) = v(2,i) - (omega(3)*(r(1,i)-comr(1))
-     $           - omega(1)*(r(3,i)-comr(3)))
-        v(3,i) = v(3,i) - (omega(1)*(r(2,i)-comr(2))
-     $           - omega(2)*(r(1,i)-comr(1)))
-       end do
+c       do i = 1,n
+c        v(1,i) = v(1,i) - (omega(2)*(r(3,i)-comr(3))
+c     $           - omega(3)*(r(2,i)-comr(2)))
+c        v(2,i) = v(2,i) - (omega(3)*(r(1,i)-comr(1))
+c     $           - omega(1)*(r(3,i)-comr(3)))
+c        v(3,i) = v(3,i) - (omega(1)*(r(2,i)-comr(2))
+c     $           - omega(2)*(r(1,i)-comr(1)))
+c       end do
 c      make sure center-of-mass velocity is still zero
        call qmd_remove_comv(n,m,v,lz1,lz2)
       else if (do_linear) then

@@ -1,0 +1,525 @@
+diff --git a/src/geom/geom.F b/src/geom/geom.F
+index ca38289..282989e 100644
+--- a/src/geom/geom.F
++++ b/src/geom/geom.F
+@@ -2145,9 +2145,9 @@ c
+          coords(1,i,geom) = c(1,i)
+          coords(2,i,geom) = c(2,i)
+          coords(3,i,geom) = c(3,i)
+-         velocities(1,i,geom) = c(1,i)
+-         velocities(2,i,geom) = c(2,i)
+-         velocities(3,i,geom) = c(3,i)
++         velocities(1,i,geom) = v(1,i)
++         velocities(2,i,geom) = v(2,i)
++         velocities(3,i,geom) = v(3,i)
+       end do
+ c
+       end
+diff --git a/src/gwmol/gw_cdgw_buildiw.F b/src/gwmol/gw_cdgw_buildiw.F
+index 30e7604..e5d1937 100644
+--- a/src/gwmol/gw_cdgw_buildiw.F
++++ b/src/gwmol/gw_cdgw_buildiw.F
+@@ -273,7 +273,7 @@ c
+           call gw_invdiag(dbl_mb(k_vx),ldpi,nri,ecrpa,.true.)
+         else
+ #ifdef GW_NORFP
+-          call dpotrf('l',nri,dbl_mb(k_pi),info)
++          call dpotrf('l',nri,dbl_mb(k_pi),nri,info)
+ #else
+           call dpftrf('n','l',nri,dbl_mb(k_pi),info)
+ #endif
+diff --git a/src/libext/tblite/build_tblite_cmake.sh b/src/libext/tblite/build_tblite_cmake.sh
+index cb135f8..27832c5 100755
+--- a/src/libext/tblite/build_tblite_cmake.sh
++++ b/src/libext/tblite/build_tblite_cmake.sh
+@@ -82,7 +82,7 @@ fi
+ 
+ if [[ ${BLAS_SIZE} == 8 ]]; then
+   ilp64=ON
+-    if  [[ ${FC} == f95 ]] || [[ ${FC_EXTRA} == gfortran ]] ; then
++    if  [[ ${FC} == f95 ]] || [[ ${FC} == gfortran ]] ; then
+       Fortran_FLAGS=" -fdefault-integer-8 -w "
+     elif  [[ ${FC} == xlf ]] || [[ ${FC} == xlf_r ]] || [[ ${FC} == xlf90 ]]|| [[ ${FC} == xlf90_r ]]; then
+       Fortran_FLAGS=" -qintsize=8 -qextname "
+diff --git a/src/qmd/qmd_common.fh b/src/qmd/qmd_common.fh
+index 7580e68..78f02b4 100644
+--- a/src/qmd/qmd_common.fh
++++ b/src/qmd/qmd_common.fh
+@@ -7,13 +7,14 @@ c
+       common/qmd_int/lgeom,igeom,jdebug
+ c
+ c     nose-hoover thermostat parameters
+-      integer maxchain
+-      parameter (maxchain = 2)
++      integer maxchain,maxnsy,nnhos,nnhsy
++      parameter (maxchain = 10, maxnsy = 7)
+       logical do_nosehoover
+       double precision r_nh(maxchain)    ! chain positions
+-      double precision v_nh(maxchain)    ! chain velocities
++      double precision v_nh(maxchain)  ! chain velocities
+       double precision m_nh(maxchain)    ! chain masses
+       double precision g_nh(maxchain)    ! bath couplings
++      double precision syw_nh(maxnsy)    ! Suzuki-Yoshida weights
+ c
+ c     berendsen thermostat
+       logical do_berendsen
+@@ -31,7 +32,8 @@ c     stochastic velocity rescaling
+       logical do_svr
+ c     
+       common/qmd_thermostats/do_berendsen,tau,
+-     &                       do_nosehoover,r_nh,v_nh,m_nh,g_nh,
++     &                       do_nosehoover,r_nh,v_nh,m_nh,g_nh,syw_nh,
++     &                       nnhos, nnhsy,
+      &                       do_langevin,friction,
+      &                       do_rescale,idum,
+      &                       do_svr
+diff --git a/src/qmd/qmd_init.F b/src/qmd/qmd_init.F
+index ed797a8..7a83dd5 100644
+--- a/src/qmd/qmd_init.F
++++ b/src/qmd/qmd_init.F
+@@ -19,6 +19,7 @@ c
+ #include "msgids.fh"
+ #include "stdio.fh"
+ #include "msgtypesf.h"
++#include "util_params.fh"
+ c
+ #include "qmd_common.fh"
+ c
+@@ -41,7 +42,7 @@ c
+       character*32 integrator_nucl  ! nuclear md integrator
+       character*32 integrator_elec  ! electronic dynamics integrator
+       integer ichain
+-      double precision nh_mass(2)   ! nose-hoover mass
++      double precision nhfreq   ! nose-hoover mass
+       logical do_none
+       logical restart
+       logical do_namd
+@@ -114,12 +115,6 @@ c     thermostat
+          do_berendsen = .true.
+       else if (thermostat.eq.'nose-hoover') then
+          do_nosehoover = .true.
+-         do ichain = 1,maxchain
+-            r_nh(ichain) = 0.d0            ! position of chains
+-            v_nh(ichain) = 0.d0            ! velocity of chains
+-            m_nh(ichain) = nh_mass(ichain) ! mass of chains
+-            g_nh(ichain) = 0.d0            ! bath coupling
+-         end do
+        else if (thermostat.eq.'langevin') then
+          do_langevin = .true.
+        else if (thermostat.eq.'rescale') then
+@@ -137,13 +132,38 @@ c     thermostat
+       end if
+ c
+ c     nose-hoover mass parameter
+-      if (.not.rtdb_get(rtdb,'qmd:nh_mass',mt_dbl,2,nh_mass))
++      if (.not.rtdb_get(rtdb,'qmd:nhfreq',mt_dbl,1,nhfreq))
+      & call errquit(pname//'failed to read nh_mass',0,RTDB_ERR)
++      if (.not.rtdb_get(rtdb,'qmd:nnhos',mt_int,1,nnhos))
++     & call errquit(pname//'failed to read nh_nchain',0,RTDB_ERR)
++      if (.not.rtdb_get(rtdb,'qmd:nnhsy',mt_int,1,nnhsy))
++     & call errquit(pname//'failed to read nh_nsy',0,RTDB_ERR)
+       if (do_nosehoover) then
++        do ichain = 1,nnhos
++           r_nh(ichain) = 0.d0                                          ! position of chains
++           m_nh(ichain) = kb_au*targ_temp/nhfreq**2                     ! mass of chains
++           v_nh(ichain) = 0.d0                     ! velocity of chains
++           g_nh(ichain) = 0.d0                                          ! bath coupling
++        end do
++
++       if (nnhsy.eq.1) then
++         syw_nh(1) = 1d0
++       elseif (nnhsy.eq.3) then
++         syw_nh(1) = 1d0/(2d0 - 2d0**(1d0/3d0))
++         syw_nh(2) = 1 - 2*syw_nh(1)
++         syw_nh(3) = syw_nh(1)
++       elseif (nnhsy.eq.7) then
++         syw_nh(1) =  0.784513610477560d0
++         syw_nh(2) =  0.235573213359357d0
++         syw_nh(3) = -1.17767998417887d0
++         syw_nh(4) = 1d0 - 2*sum(syw_nh(1:3))
++         syw_nh(5) = syw_nh(3)
++         syw_nh(6) = syw_nh(2)
++         syw_nh(7) = syw_nh(1)
++       endif
++
+        if (ga_nodeid().eq.0) 
+-     &      write(luout,130) "NH mass(1):",nh_mass(1)
+-       if (ga_nodeid().eq.0) 
+-     &      write(luout,130) "NH mass(2):",nh_mass(2)
++     &      write(luout,130) "NH frequency:",nhfreq
+       end if
+ c
+ c     langevin friction parameter
+diff --git a/src/qmd/qmd_input.F b/src/qmd/qmd_input.F
+index 186293a..a32aca9 100644
+--- a/src/qmd/qmd_input.F
++++ b/src/qmd/qmd_input.F
+@@ -31,9 +31,9 @@ c
+       integer tvals(8)
+       double precision targ_temp
+       double precision friction
+-      integer idum
++      integer idum, nnhos, nnhsy
+       double precision tau
+-      double precision nh_mass(2)
++      double precision nh_freq
+       character*32 test
+       character*32 thermostat
+       character*32 integrator_nucl
+@@ -83,10 +83,15 @@ c     Berendsen tau parameter, also used for svr
+      & call errquit(pname//'failed to write tau',0,RTDB_ERR)
+ c
+ c     Nose-Hoover mass parameter
+-      nh_mass(1)=0.1d0
+-      nh_mass(2)=0.1d0
+-      if (.not.rtdb_put(rtdb,'qmd:nh_mass',mt_dbl,2,nh_mass(1)))
+-     &  call errquit(pname//'failed to write nh_mass',0,RTDB_ERR)
++      nh_freq = 0.013669d0
++      nnhos = 3
++      nnhsy = 3
++      if (.not.rtdb_put(rtdb,'qmd:nhfreq',mt_dbl,1,nh_freq))
++     & call errquit(pname//'failed to write tau',0,RTDB_ERR)
++      if (.not.rtdb_put(rtdb,'qmd:nnhos',mt_dbl,1,nnhos))
++     & call errquit(pname//'failed to write tau',0,RTDB_ERR)
++      if (.not.rtdb_put(rtdb,'qmd:nnhsy',mt_dbl,1,nnhsy))
++     & call errquit(pname//'failed to write tau',0,RTDB_ERR)
+ c
+ c     Nuclear MD integrator
+       integrator_nucl='velocity-verlet'
+@@ -199,10 +204,48 @@ c     Nuclear thermostat
+      1   call errquit(pname//'failed to write thermostat',0,RTDB_ERR)
+ c       Nose-Hoover: get masses
+         if (thermostat.eq.'nose-hoover') then
+-          if (.not.inp_f(nh_mass(1))) nh_mass(1) = 0.1d0
+-          if (.not.inp_f(nh_mass(2))) nh_mass(2) = 0.1d0
+-          if (.not.rtdb_put(rtdb,'qmd:nh_mass',mt_dbl,2,nh_mass(1)))
+-     &     call errquit(pname//'failed to write nh_mass',0,RTDB_ERR)
++  200     if (.not.inp_a(test)) goto 10
++  201     if (inp_compare(.false.,'nnhos',test)) then
++            if (.not.inp_i(nnhos))
++     &      call errquit(pname//'failed to read number of oscillators',
++     &         0,INPUT_ERR)
++            if (.not.rtdb_put(rtdb,'qmd:nnhos',mt_int,1,nnhos))
++     &        call errquit(pname//'failed to write nnhos',0,RTDB_ERR)
++            goto 200
++          elseif(inp_compare(.false.,'frequency',test)) then
++            if (.not.inp_f(nh_freq)) 
++     &      call errquit(pname//'failed to read frequency',0,INPUT_ERR)
++            if (.not.rtdb_put(rtdb,'qmd:nhfreq',mt_dbl,1,nh_freq))
++     &        call errquit(pname//'failed to write nhfreq',0,RTDB_ERR)
++            if (.not.inp_a(test)) goto 10
++            if (inp_compare(.false.,'1/cm',test)) then
++              nh_freq = nh_freq*4.5563352529120d-6
++            elseif (inp_compare(.false.,'cm^-1',test)) then
++              nh_freq = nh_freq*4.5563352529120d-6
++            elseif (inp_compare(.false.,'ev',test)) then
++              nh_freq = nh_freq*3.6749322175655d-2
++            elseif (inp_compare(.false.,'au',test)) then
++              nh_freq = nh_freq
++            elseif (inp_compare(.false.,'ha',test)) then
++              nh_freq = nh_freq
++            else
++              goto 201
++            endif
++            if (.not.rtdb_put(rtdb,'qmd:nhfreq',mt_dbl,1,nh_freq))
++     &        call errquit(pname//'failed to write nnhos',0,RTDB_ERR)
++            goto 200
++          elseif(inp_compare(.false.,'nsy',test)) then
++            if (.not.inp_i(nnhsy))
++     &      call errquit(pname//'failed to number of Suzuki-Yoshida'//
++     &                        ' points',0,INPUT_ERR)
++            if (.not.rtdb_put(rtdb,'qmd:nnhsy',mt_int,1,nnhsy))
++     &        call errquit(pname//'failed to write nnhsy',0,RTDB_ERR)
++            goto 200
++          else
++            call errquit(pname//'unknown nose-hoover option '//
++     $                   trim(test),0,INPUT_ERR)
++          endif
++
+ c       Berendsen or svr (Bussi, Donadio, Parrinello 2007): get tau
+         else if (thermostat.eq.'berendsen'.or.thermostat.eq.'svr') then
+           if (.not.inp_f(tau)) tau = 1.d3
+@@ -342,10 +385,10 @@ c $Id$
+ #include "mafdecls.fh"
+ #include "errquit.fh"
+ c
+-      integer nstep_nucl
++      integer nstep_nucl, nnhos, nnhsy
+       double precision dt_nucl
+       double precision targ_temp
+-      double precision nh_mass(2)
++      double precision nhfreq
+       double precision tau
+       character*32 thermostat
+       character*32 integrator_nucl
+@@ -378,11 +421,22 @@ c     Nuclear thermostat
+      &      call errquit(pname//'failed to write thermostat',0,RTDB_ERR)
+       endif
+ c     Nose-Hoover mass parameter
+-      if (.not.rtdb_get(rtdb,'qmd:nh_mass',mt_dbl,2,nh_mass(1)))then
+-         nh_mass(1)=0.1d0
+-         nh_mass(2)=0.1d0
+-         if (.not.rtdb_put(rtdb,'qmd:nh_mass',mt_dbl,2,nh_mass(1)))
+-     &        call errquit(pname//'failed to write nh_mass',0,RTDB_ERR)
++      if (.not.rtdb_get(rtdb,'qmd:nhfreq',mt_dbl,1,nhfreq))then
++         nhfreq = 0.013669d0
++         if (.not.rtdb_put(rtdb,'qmd:nhfreq',mt_dbl,1,nhfreq))
++     &        call errquit(pname//'failed to write nhfreq',0,RTDB_ERR)
++      endif
++c     Nose-Hoover number of oscillators
++      if (.not.rtdb_get(rtdb,'qmd:nnhos',mt_int,1,nnhos))then
++         nnhos = 3
++         if (.not.rtdb_put(rtdb,'qmd:nnhos',mt_int,1,nnhos))
++     &        call errquit(pname//'failed to write nnhos',0,RTDB_ERR)
++      endif
++c     Nose-Hoover number of Suzuki-Yoshida points
++      if (.not.rtdb_get(rtdb,'qmd:nnhsy',mt_int,1,nnhsy))then
++         nnhsy = 3
++         if (.not.rtdb_put(rtdb,'qmd:nnhsy',mt_int,1,nnhsy))
++     &        call errquit(pname//'failed to write nnhsy',0,RTDB_ERR)
+       endif
+ c     Berendsen tau parameter, also used for svr
+       if (.not.rtdb_get(rtdb,'qmd:tau',mt_dbl,1,tau)) then
+diff --git a/src/qmd/qmd_ran1.F b/src/qmd/qmd_ran1.F
+index 35c500a..1dd8611 100644
+--- a/src/qmd/qmd_ran1.F
++++ b/src/qmd/qmd_ran1.F
+@@ -6,8 +6,8 @@ c
+       integer idum,IA,IM,IQ,IR,NTAB,NDIV
+       double precision AM,EPS,RNMX
+ c
+-      parameter (IA=16807,IM=2147483647,AM=1./IM,IQ=127773,IR=2836,
+-     & NTAB=32,NDIV=1+(IM-1)/NTAB,EPS=1.2e-7,RNMX=1.-EPS)
++      parameter (IA=16807,IM=2147483647,AM=1.d0/IM,IQ=127773,IR=2836,
++     & NTAB=32,NDIV=1+(IM-1)/NTAB,EPS=1.2e-7,RNMX=1.d0-EPS)
+ c
+       integer j,k,iv(NTAB),iy
+       save iv,iy
+diff --git a/src/qmd/qmd_thermostat.F b/src/qmd/qmd_thermostat.F
+index 4fd2d48..6ba4c2f 100644
+--- a/src/qmd/qmd_thermostat.F
++++ b/src/qmd/qmd_thermostat.F
+@@ -69,9 +69,9 @@ c
+ c
+       double precision dt2,dt4,dt8
+ c
+-      integer i,j
+-      double precision scalefac
+-      double precision kbt
++      integer i,j,ios,isy,ims,mdeg
++      double precision scalefac,aa,kbt
++
+ c
+       character*30 pname
+ c
+@@ -81,43 +81,75 @@ c     preliminaries
+       dt4 = 0.25d0*dt
+       dt8 = 0.125d0*dt
+       kbt = kb_au*targ_temp
++
++      mdeg = ndeg + 6
++      if (do_linear) mdeg = mdeg - 1
++
++      scalefac = 1d0
++      m_nh(1) = m_nh(1)*mdeg
++
++      g_nh(1) = (2d0*KE_in - mdeg*kbt)/m_nh(1)
++
++      do ims=1,3
++      do isy=1,nnhsy
++        v_nh(nnhos) = v_nh(nnhos) + g_nh(nnhos)*dt4*syw_nh(isy)/3
++        do ios=1,nnhos-1
++          aa = dexp(-dt8*syw_nh(isy)*v_nh(nnhos+1-ios)/3)
++          v_nh(nnhos-ios) = v_nh(nnhos-ios)*aa**2 +
++     $                      dt4*syw_nh(isy)*g_nh(nnhos-ios)*aa/3
++        enddo
++        aa = dexp(-dt2*syw_nh(isy)*v_nh(1)/3)
++        scalefac = scalefac*aa
++        g_nh(1) = (2d0*KE_in*scalefac**2 - mdeg*kbt)/m_nh(1)
++        do ios=1,nnhos
++          r_nh(ios) = r_nh(ios) + v_nh(ios)*dt2*syw_nh(isy)/3
++        enddo
++        do ios=1,nnhos-1
++          aa = dexp(-dt8*syw_nh(isy)*v_nh(ios+1)/3)
++          v_nh(ios) = v_nh(ios)*aa**2 + dt4*syw_nh(isy)*g_nh(ios)*aa/3
++          g_nh(ios+1) = (m_nh(ios)*v_nh(ios)**2 - kbt)/m_nh(ios+1)
++        enddo
++        v_nh(nnhos) = v_nh(nnhos) + g_nh(nnhos)*dt4*syw_nh(isy)/3
++      enddo
++      enddo
++      
++      do i=1,n
++        v(1:3,i) = scalefac*v(1:3,i)
++      enddo
++
++      m_nh(1) = m_nh(1)/mdeg
++
+ c
+ c     nose-hoover 2 chain formula: Frenkel & Smit
+-      g_nh(2) = (m_nh(1)*v_nh(1)*v_nh(1)-kbt)/m_nh(2)
++
++c      g_nh(2) = (m_nh(1)*v_nh(1)*v_nh(1)-kbt)/m_nh(2)
+ c
+-      v_nh(2) = v_nh(2) + g_nh(2)*dt4
+-      v_nh(1) = v_nh(1) * dexp(-v_nh(2)*dt8)
++c      v_nh(2) = v_nh(2) + g_nh(2)*dt4
++c      v_nh(1) = v_nh(1) * dexp(-v_nh(2)*dt8)
+ c
+-      g_nh(1) = (2.0d0*KE_in - ndeg*kbt)/m_nh(1)
++c      g_nh(1) = (2.0d0*KE_in - ndeg*kbt)/m_nh(1)
+ c
+-      v_nh(1) = v_nh(1) + g_nh(1)*dt4
+-      v_nh(1) = v_nh(1) * dexp(-v_nh(2)*dt8)
++c      v_nh(1) = v_nh(1) + g_nh(1)*dt4
++c      v_nh(1) = v_nh(1) * dexp(-v_nh(2)*dt8)
+ c
+-      r_nh(1) = r_nh(1) + v_nh(1)*dt2
+-      r_nh(2) = r_nh(2) + v_nh(2)*dt2
++c      r_nh(1) = r_nh(1) + v_nh(1)*dt2
++c      r_nh(2) = r_nh(2) + v_nh(2)*dt2
+ c
+-      scalefac = dexp(-v_nh(1)*dt2)
++c      scalefac = dexp(-v_nh(1)*dt2)
+ c
+ c     scale kinetic energy
+-      KE_in = KE_in*scalefac*scalefac
++c      KE_in = KE_in*scalefac*scalefac
+ c
+ c     nose-hoover 2 chain formula: Frenkel & Smit
+-      g_nh(1) = (2.0d0*KE_in - ndeg*kbt)/m_nh(1)
++c      g_nh(1) = (2.0d0*KE_in - ndeg*kbt)/m_nh(1)
+ c
+-      v_nh(1) = v_nh(1) * dexp(-v_nh(2)*dt8)
+-      v_nh(1) = v_nh(1) + g_nh(1)*dt4
+-      v_nh(1) = v_nh(1) * dexp(-v_nh(2)*dt8)
++c      v_nh(1) = v_nh(1) * dexp(-v_nh(2)*dt8)
++c      v_nh(1) = v_nh(1) + g_nh(1)*dt4
++c      v_nh(1) = v_nh(1) * dexp(-v_nh(2)*dt8)
+ c
+-      g_nh(2) = (m_nh(1)*v_nh(1)*v_nh(1)-kbt)/m_nh(2)
++c      g_nh(2) = (m_nh(1)*v_nh(1)*v_nh(1)-kbt)/m_nh(2)
+ c
+-      v_nh(2) = v_nh(2) + g_nh(2)*dt4
+-c
+-c     scale velocity
+-      do i = 1,n
+-        v(1,i) = scalefac*v(1,i)
+-        v(2,i) = scalefac*v(2,i)
+-        v(3,i) = scalefac*v(3,i)
+-      end do
++c      v_nh(2) = v_nh(2) + g_nh(2)*dt4
+ c
+       return
+       end
+diff --git a/src/xtb/xtb_energy.F b/src/xtb/xtb_energy.F
+index 17a8a3a..346bb78 100644
+--- a/src/xtb/xtb_energy.F
++++ b/src/xtb/xtb_energy.F
+@@ -58,6 +58,8 @@
+       type(wavefunction_type),allocatable :: wfn
+       type(context_type),allocatable      :: ctx
+       type(param_record),allocatable      :: param
++
++      logical oldmode
+       
+ #ifdef USE_OPENMP
+       integer maxthreads
+@@ -180,6 +182,7 @@
+       allocate(ctx)
+       allocate(param)
+ 
++      oldmode = rtdb_parallel(.false.)
+       if (ga_nodeid().eq.0) then
+         !
+         ! Pass geometry info and create mol object
+@@ -279,6 +282,7 @@
+         status = rtdb_put(rtdb,'xtb:restart',mt_log,1,.true.)
+         xtb_energy = .not.ctx%failed()
+       endif
++      oldmode = rtdb_parallel(oldmode)
+ 
+       !
+       ! Check if something failed during the calculation
+diff --git a/src/xtb/xtb_energy_gradient.F b/src/xtb/xtb_energy_gradient.F
+index 642db8b..e409a2c 100644
+--- a/src/xtb/xtb_energy_gradient.F
++++ b/src/xtb/xtb_energy_gradient.F
+@@ -209,8 +209,8 @@ c
+       allocate(calc)
+       allocate(ctx)
+ 
++      status = rtdb_parallel(.false.)
+       if (ga_nodeid().eq.0) then
+-        status = rtdb_parallel(.false.)
+ 
+         !
+         ! Create mol object
+@@ -273,7 +273,6 @@ c
+         call xtb_singlepoint(ctx,mol,calc,wfn,acc,energy,grad,sigma,
+      $                       verbosity=verb4)
+ 
+-
+         !
+         ! Total energy output
+         !
+@@ -343,8 +342,8 @@ c
+ 
+         dipole(1:3) = sum(wfn%dpat(:,:,1),dim=2)
+         status = rtdb_put(rtdb,'task:dipole',mt_dbl,3,dipole)
+-        status = rtdb_parallel(.true.)
+       endif
++      status = rtdb_parallel(.true.)
+ 
+       xtb_energy_gradient = .not.ctx%failed()
+ 
+@@ -369,11 +368,15 @@ c
+         status = rtdb_parallel(.false.)
+         if (.not.rtdb_put(rtdb,'xtb:energy',mt_dbl,1,energy))
+      $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
++        if (.not.rtdb_put(rtdb,'task:energy',mt_dbl,1,energy))
++     $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
+         if (.not.rtdb_put(rtdb,'xtb:converged',mt_log,1,.true.))
+      $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
+ 
+         if (.not.rtdb_put(rtdb,'xtb:gradient',mt_dbl,3*nat,grad))
+      $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
++        if (.not.rtdb_put(rtdb,'task:gradient',mt_dbl,3*nat,grad))
++     $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
+         status = rtdb_parallel(.true.)
+       endif
+ 
+diff --git a/src/xtb/xtb_restart_read.F b/src/xtb/xtb_restart_read.F
+index 0d681e5..ee379bc 100644
+--- a/src/xtb/xtb_restart_read.F
++++ b/src/xtb/xtb_restart_read.F
+@@ -11,7 +11,8 @@
+ 
+       parameter(unitno=66)
+ 
+-      open(unit=unitno,status='old',form='unformatted',file=restart_out)
++      open(unit=unitno,status='old',form='unformatted',file=restart_out,
++     $     position='rewind')
+       do ispin=1,nspin
+         call sread(unitno, wfn%qsh(1,ispin), int(calc%bas%nsh))
+         call sread(unitno, wfn%qat(1,ispin), int(mol%nat))
+diff --git a/src/xtb/xtb_restart_write.F b/src/xtb/xtb_restart_write.F
+index e3f3923..0c0ae60 100644
+--- a/src/xtb/xtb_restart_write.F
++++ b/src/xtb/xtb_restart_write.F
+@@ -13,7 +13,7 @@
+       parameter(unitno=66)
+ 
+       open(unit=unitno,status='unknown',form='unformatted',
+-     $     file=restart_out)
++     $     file=restart_out,position='rewind')
+       do ispin=1,nspin
+ c        do i=1,nao
+ c          call swrite(unitno, dmat(1,i,ispin), int(calc%bas%nao))
+@@ -23,5 +23,6 @@ c        enddo
+         call swrite(unitno, wfn%dpat(1,1,ispin), int(3*mol%nat))
+         call swrite(unitno, wfn%qpat(1,1,ispin), int(6*mol%nat))
+       enddo
+-      close(unit=unitno)
++      call util_flush(unitno)
++      close(unit=unitno,status='keep')
+       end

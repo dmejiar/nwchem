@@ -209,8 +209,8 @@ c
       allocate(calc)
       allocate(ctx)
 
+      status = rtdb_parallel(.false.)
       if (ga_nodeid().eq.0) then
-        status = rtdb_parallel(.false.)
 
         !
         ! Create mol object
@@ -272,7 +272,6 @@ c
         !
         call xtb_singlepoint(ctx,mol,calc,wfn,acc,energy,grad,sigma,
      $                       verbosity=verb4)
-
 
         !
         ! Total energy output
@@ -343,8 +342,8 @@ c
 
         dipole(1:3) = sum(wfn%dpat(:,:,1),dim=2)
         status = rtdb_put(rtdb,'task:dipole',mt_dbl,3,dipole)
-        status = rtdb_parallel(.true.)
       endif
+      status = rtdb_parallel(.true.)
 
       xtb_energy_gradient = .not.ctx%failed()
 
@@ -369,10 +368,14 @@ c
         status = rtdb_parallel(.false.)
         if (.not.rtdb_put(rtdb,'xtb:energy',mt_dbl,1,energy))
      $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
+        if (.not.rtdb_put(rtdb,'task:energy',mt_dbl,1,energy))
+     $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
         if (.not.rtdb_put(rtdb,'xtb:converged',mt_log,1,.true.))
      $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
 
         if (.not.rtdb_put(rtdb,'xtb:gradient',mt_dbl,3*nat,grad))
+     $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
+        if (.not.rtdb_put(rtdb,'task:gradient',mt_dbl,3*nat,grad))
      $    call errquit('xtb_energy: failed to put in rtdb',0,RTDB_ERR)
         status = rtdb_parallel(.true.)
       endif
