@@ -3,7 +3,7 @@ C>
      ,     tol_rho, Amat, Cmat, Lmat,
      &     chi, delchi, heschi, 
      N     nmat,
-     I     ipol, nq, nbf, max_at_bf`, 
+     I     ipol, nq, nbf, max_at_bf, 
      G     GRAD, basis, natoms, iniz, ifin, 
      &     ibf, rchi_atom, rdelchi_atom, 
      &     cetobfr,kslap,xc_coef)
@@ -31,7 +31,7 @@ c
       integer nq    !< [Input] The number of grid points
       integer nbf    !< [Input] The number of basis functions
       integer natoms !< [Input] The number of atoms
-      double precision xc_coef(nbf)
+      double precision xc_coef(nbf,ipol)
       double precision tol_rho !< [Input] The electron density threshold
       double precision rchi_atom(natoms) !< [Input] The maximum basis
                                          !< function radius for each
@@ -146,16 +146,17 @@ c
             endif
             if (kslap) then
               call dgemv('T',nnia,nq,heschi(1,1,inizia),6*nq,
-     $                    mmat(1,ii,imat),1,1d0,coeff,1)         
+     $                    lmat(1,ii,imat),1,1d0,coeff,1)         
               call dgemv('T',nnia,nq,heschi(1,4,inizia),6*nq,
-     $                    mmat(1,ii,imat),1,1d0,coeff,1)         
+     $                    lmat(1,ii,imat),1,1d0,coeff,1)         
               call dgemv('T',nnia,nq,heschi(1,6,inizia),6*nq,
-     $                    mmat(1,ii,imat),1,1d0,coeff,1)         
+     $                    lmat(1,ii,imat),1,1d0,coeff,1)         
             endif
 
             do mu=inizia,ifinia
               xc_coef(ibf(mu),ipol) = coeff(mu-inizia+1)
             enddo
+          enddo
 
   430   continue ! iat0 loop
   500 continue ! imat loop

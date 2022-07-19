@@ -1109,7 +1109,7 @@ c
         nbf_xc_mxnbf_ce = nbf_cd_mxnbf_ce
         nshells_xc = nshells_cd
         xcfit = .true.
-      elseif (adft)
+      elseif (adft) then
         call errquit(pname//'Need a CD BASIS for ADFT',0,INPUT_ERR)
       endif
 c

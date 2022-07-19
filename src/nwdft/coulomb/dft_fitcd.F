@@ -227,7 +227,7 @@ c
 c        Compute Lagrange multiplier, alpha
 c
          F(1) = ddot(nbf_cd,DBL_mb(icgtf),1,CD_coef(1,ifit),1)
-            alpha = (Q - F(1))/F(2)
+         alpha = (Q(ifit) - F(1))/F(2)
 c         write(*,*)'F alpha',f(1),f(2),alpha
 c
 c        Correct unconstrained coefficients by alpha*S**(-1)*cgtf

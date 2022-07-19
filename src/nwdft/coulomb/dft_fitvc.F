@@ -295,13 +295,13 @@ c     add extra bit to ipoint if ishd_1 is truncated
                enddo            ! ishc
 c     ga_put only if anything ever survived the schwarz scr
                
-               if(v_nonzero)
+               if(v_nonzero) then
                     do imat=1,nmat
-     G              call ga_put(g_vc(imat), 
-     B              bf_lo_d, bf_hi_d, 
-     C              bf_lo_c,bf_hi_c,
-     C              dbl_mb(k_p+(imat-1)*nbf_at_c*nbf_at_d), nbf_at_d)
+                      call ga_put(g_vc(imat), 
+     B                     bf_lo_d, bf_hi_d,bf_lo_c,bf_hi_c,
+     C                 dbl_mb(k_p+(imat-1)*nbf_at_c*nbf_at_d), nbf_at_d)
                     enddo
+               endif
 
                if(use_nxtask) then
                   n1 = nxtask(nproc,1)

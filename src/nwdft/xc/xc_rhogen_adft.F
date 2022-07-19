@@ -102,7 +102,7 @@ c
          if(grad) FUNC_MAXI = max(FUNC_MAXI,rdelchi_atom(iat))
          P_MAXI = dabsmax(nbfia,cd_coef(1,1))
          if (ipol.gt.1) P_MAXI = max(P_MAXI,dabsmax(cd_coef(1,2)))
-         if (wmax*FUNC_MAXI*P_MAXI*nbfia.lt.tol_rho) cycle
+         if (wmax*FUNC_MAXI*P_MAXI*nbfia.lt.tol_rho) goto 230
 
          do ii=1,ipol
            do mu=inizia,ifinia
@@ -110,24 +110,24 @@ c
            enddo
 
            call dgemv('N',nq,nnia,1d0,chi(1,inizia),nq,
-     $                 coeff(1,ii),1,1d0,rho(1,i0+ii),1)
+     $                 coeff,1,1d0,rho(1,i0+ii),1)
 
            if (grad) then
              call dgemv('N',3*nq,nnia,1d0,delchi(1,1,inizia),
-     $                   3*nq,coeff(1,ii),1,1d0,delrho(1,1,ii),1)
+     $                   3*nq,coeff,1,1d0,delrho(1,1,ii),1)
            endif
 
            if (dolap) then
              call dgemv('N',nq,nnia,1d0,heschi(1,1,inizia),6*nq,
-     $                   coeff(1,ii),1,1d0,lap(1,ii),1)
+     $                   coeff,1,1d0,lap(1,ii),1)
              call dgemv('N',nq,nnia,1d0,heschi(1,4,inizia),6*nq,
-     $                   coeff(1,ii),1,1d0,lap(1,ii),1)
+     $                   coeff,1,1d0,lap(1,ii),1)
              call dgemv('N',nq,nnia,1d0,heschi(1,6,inizia),6*nq,
-     $                   coeff(1,ii),1,1d0,lap(1,ii),1)
+     $                   coeff,1,1d0,lap(1,ii),1)
            endif
 
          enddo
-      enddo
+ 230  continue
 
       if(zapnegatives) then
 !$omp   parallel do collapse(2)

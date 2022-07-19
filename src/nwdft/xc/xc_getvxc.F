@@ -207,7 +207,7 @@ c     symmetrize the "T" vector
 c     
             if (oskel)then
                call sym_vec_symmetrize(
-       .            geom,xc_bas_han,Dbl_MB(iTmat))
+     .              geom,xc_bas_han,Dbl_MB(iTmat))
                if (ipol.gt.1)then
                   call sym_vec_symmetrize(geom, xc_bas_han, 
      &                    Dbl_MB(iTmat+nbf_xc))
@@ -225,8 +225,10 @@ c
             if (ADFT) then
               call dcopy(ipol*nbf_cd,dbl_mb(iTmat),1,
      $                   cd_coef(1,ipol+1),1)
-              call daxpy(nbf_cd,1.0d0,cd_coef(2),1,cd_coef(1),1)
-              call dcopy(nbf_cd,cd_coef(1),1,cd_coef(2),1)
+              if (ipol.gt.1) then
+                call daxpy(nbf_cd,1.0d0,cd_coef(1,2),1,cd_coef(1,1),1)
+                call dcopy(nbf_cd,cd_coef(1,1),1,cd_coef(1,2),1)
+              endif
               call daxpy(ipol*nbf_cd,1.0d0,dbl_mb(iTmat),1,cd_coef,1)
             endif
 

@@ -105,6 +105,7 @@ c
       external ddot
 
       integer icntoce,lcntoce,lcntobfr,icntobfr,lcetobfr,icetobfr
+      integer basis,mxnbf_ce,mbf_xc
 
       pname = 'grid_quadv0b: '
       mbf_fde = 0
@@ -123,7 +124,7 @@ c
         mbf_ao = nbf_xc
         mxnbf_ce = nbf_xc_mxnbf_ce
         if (.not.ma_push_get
-     &     (mt_int,nctrs*2,'cntoce map',lcetobfr,icetobfr))
+     &     (mt_int,ncenters*2,'cntoce map',lcetobfr,icetobfr))
      &     call errquit(pname//'push_get failed', 13, MA_ERR)
         if (.not.ma_push_get
      &     (mt_int,nshells_xc,'cntoce map',lcntoce,icntoce))
@@ -133,7 +134,7 @@ c
      &     call errquit(pname//'push_get failed', 13, MA_ERR)
 c     
         call build_maps(basis, int_mb(icntoce), int_mb(icntobfr), 
-     &                  int_mb(icetobfr), nctrs, nshells_xc)
+     &                  int_mb(icetobfr), ncenters, nshells_xc)
         if (.not.ma_chop_stack(lcntoce))
      &     call errquit(pname//'cannot pop stack',1, MA_ERR)
       else
@@ -684,7 +685,8 @@ c
       endif
 c
       if(adft) then
-         call xc_tabcd_adft(tol_rho,amat,cmat,lmat,chi,delchi,heschi,
+         call xc_tabcd_adft(tol_rho,amat,cmat,lmat,dbl_mb(ichi_ao),
+     $   dbl_mb(idelchi_ao),dbl_mb(iheschi_ao),
      $   nmat,ipol,nqpts,nbf_xc,mxnbf_ce,grad,xc_bas_han,natoms,iniz,
      $   ifin,ibf_ao,rchi_atom,rdelchi_atom,int_mb(icetobfr),kslap,
      $   tmat(nbf_xc*ipol+1))
