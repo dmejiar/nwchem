@@ -156,6 +156,12 @@ c
 
       icd_coef = 1
 
+      if (cdfit) then
+        if (.not.MA_Push_Get(MT_Dbl,4*nbf_cd,'cd_coef',lcd_coef,
+     &       icd_coef))
+     &    call errquit('dft_scf: cannot allocate cd_coef',0, MA_ERR)
+      endif
+
 c Jorge Garza/Begin
       if (ldmix) then
         iter_ini = 1
@@ -342,48 +348,6 @@ c
       if (.not.ma_pop_stack(lscr))
      &   call errquit('dft_scf: cannot pop stack',0, MA_ERR)
 c
-      if (CDFIT)then
-c
-c        Fit the electron charge density.
-c     
-         if (.not.MA_Push_Get(MT_Dbl,nbf_cd,'cd_coef',lcd_coef,
-     &        icd_coef))
-     &        call errquit('dft_scf: cannot allocate cd_coef',0, MA_ERR)
-         if (oprint_time)
-     &        call dft_tstamp(' Before call to FITCD.   ')
-         if (odftps) call pstat_on(ps_fitcd)
-         call case_setflags(.false.)  ! no attenuation for Coulomb
-         call dft_fitcd(1,Dbl_MB(icd_coef),dd3cERI,Ecoul,
-     &                  g_dens, nTotEl, n_batch, n3c_int,
-     &                  ii3cwhat, n3c_dbl, IOLGC,
-     .        natoms,
-     &                  .false., 0d0, .false.)
-         if (odftps) call pstat_off(ps_fitcd)
-      endif
-c     
-      if (oprint_time)
-     &     call dft_tstamp(' Before call to GETVCOUL.')
-      if (odftps) call pstat_on(ps_vcoul)
-      call dft_getvc(Dbl_MB(icd_coef), dd3cERI, Ecoul,
-     &               g_tmp, iVcoul_opt, n_batch, 
-     &               n3c_int, ii3cwhat, n3c_dbl,
-     &               IOLGC,
-     &               .false., 1)
-      if (odftps) call pstat_off(ps_vcoul)
-c     
-c     Add V coul to Fock Matrix
-c     
-cc AJL/Begin/SPIN ECPs
-c      call ga_dadd(1d0, g_tmp, 1d0, g_fock, g_fock)
-      do i=1,ipol
-        call ga_dadd(1d0, g_tmp, 1d0, g_focks(i), g_focks(i))
-      enddo
-cc AJL/End
-c
-      if (CDFIT)then
-         if (.not.ma_pop_stack(lcd_coef))
-     &        call errquit('dft_scf: cannot pop stack',0, MA_ERR)
-      endif
 c
 c     
       if (ipol.gt.1)then
@@ -426,6 +390,23 @@ c        call ga_dadd(1.d0, g_vxc(1), 1.d0, g_fock, g_fock)
         end if
         call ga_sync()
       end if
+c      
+      if (CDFIT)then
+c
+c        Fit the electron charge density.
+c     
+         if (oprint_time)
+     &        call dft_tstamp(' Before call to FITCD.   ')
+         if (odftps) call pstat_on(ps_fitcd)
+         call case_setflags(.false.)  ! no attenuation for Coulomb
+         call dft_fitcd(ipol,Dbl_MB(icd_coef),dd3cERI,Ecoul,
+     &                  g_dens, nTotEl, n_batch, n3c_int,
+     &                  ii3cwhat, n3c_dbl, IOLGC,
+     .        natoms,
+     &                  .false., 0d0, .false.)
+         if (odftps) call pstat_off(ps_fitcd)
+      endif
+c     
 c     
 c     == Compute the XC potential and energy ==
       g_vxc(1) = g_tmp
@@ -443,9 +424,29 @@ c
 c     == Calculate the HF exchange (exact Coulomb), DFT exchange-correlation ==
       call xc_getv(rtdb, Exc, Ecoul,nExc, iVxc_opt, g_xcinv, g_dens, 
      &             g_vxc, IOLGC, g_wght, g_xyz, g_nq,wght_GA, rho_n,
-     &             rdens_atom, cetobfr, natoms)
+     &             rdens_atom, cetobfr, natoms, dbl_mb(icd_coef))
 c
       if (odftps) call pstat_off(ps_xc)
+c
+c
+      if (oprint_time)
+     &     call dft_tstamp(' Before call to GETVCOUL.')
+      if (odftps) call pstat_on(ps_vcoul)
+      call dft_getvc(Dbl_MB(icd_coef), dd3cERI, Ecoul,
+     &               g_tmp, iVcoul_opt, n_batch, 
+     &               n3c_int, ii3cwhat, n3c_dbl,
+     &               IOLGC,
+     &               .false., 1)
+      if (odftps) call pstat_off(ps_vcoul)
+c     
+c     Add V coul to Fock Matrix
+c     
+cc AJL/Begin/SPIN ECPs
+c      call ga_dadd(1d0, g_tmp, 1d0, g_fock, g_fock)
+      do i=1,ipol
+        call ga_dadd(1d0, g_tmp, 1d0, g_focks(i), g_focks(i))
+      enddo
+cc AJL/End
 c
 c     add relativistic energy contributions
       if (do_zora .or. do_x2c) then
@@ -635,6 +636,13 @@ c       DIM potential is from total density, so same for both alpha and beta
         if (.not. ga_destroy(g_vdim))
      &    call errquit("destroy vdim failed", 9, GA_ERR)
       end if
+
+      if (CDFIT)then
+         if (.not.ma_pop_stack(lcd_coef))
+     &        call errquit('dft_scf: cannot pop stack',0, MA_ERR)
+      endif
+c
+
       if (oprint_time)
      &     call dft_tstamp(' End of parallel region. ')
 c     

@@ -40,7 +40,7 @@ c
 c
       double precision offset
       double precision F(2)
-      double precision THRESHOLD,  Q, AZ, alpha,
+      double precision THRESHOLD,  Q(nfit), AZ, alpha,
      &                 rho_int
       integer nproc, me, 
      &        nscr,max1e, nscr1e, j,   
@@ -155,7 +155,12 @@ c
       if (derfit) then
          Q = 0d0
       else
-         Q = Dble(nTotEl)
+         Q(1) = Dble(nTotEl)
+         if (nfit.gt.1) then
+           do ifit=1,nfit
+             Q(ifit) = dble(noc(ifit))
+           enddo
+         endif
       endif
 c      
       if (IOLGC)then
@@ -280,7 +285,7 @@ c     Compute the integrated electron density from the fit.
 c      
       do ifit = 1, nfit
          rho_int = ddot(nbf_cd,CD_coef(1,ifit),1,Dbl_MB(icgtf),1)
-         if (dabs(rho_int-Q).gt.0.001d0)then
+         if (dabs(rho_int-Q(ifit)).gt.0.001d0)then
             write(*,*)' rho_int check 1, density',ifit,' = ',rho_int
             write(*,*)' CD cgtf',dabsmax(nbf_cd,cd_coef),
      D           dabsmax(nbf_cd,Dbl_MB(icgtf))
@@ -345,7 +350,7 @@ c     Compute the integrated electron density from the fit.
 c      
       do ifit = 1, nfit
          rho_int = ddot(nbf_cd,CD_coef(1,ifit),1,Dbl_MB(icgtf),1)
-         if (dabs(rho_int-Q).gt.0.001d0) then
+         if (dabs(rho_int-Q(ifit)).gt.0.001d0) then
             write(*,*)' rho_int check 2, density',ifit,' = ',rho_int
             call errquit('dft_fitcd: problem w/fitted density',911,
      &       UNKNOWN_ERR)

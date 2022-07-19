@@ -17,11 +17,11 @@ c
 #include "cdft.fh"
 #include "sym.fh"
 c
-      integer nmat    ! number of J matrices to make [input]
-      integer g_vc     ! GA handle for V Coulomb [output]
+      integer nmat           ! number of J matrices to make [input]
+      integer g_vc(nmat)     ! GA handle for V Coulomb [output]
       integer n_batch        ! no. batches computed by this node [out]
-      integer n_bmax  ! max no. batches
-      integer iwhat(n_bmax) ! what batches have been computed [out]
+      integer n_bmax         ! max no. batches
+      integer iwhat(n_bmax)  ! what batches have been computed [out]
       integer n3c_dbl
 c
       double precision CD_coef(nbf_cd,nmat)
@@ -127,7 +127,7 @@ c
       if(.not.MA_Push_Get(MT_Dbl,Nao2*nmat,'isvec',lsvec,isvec))
      &  call errquit('dft_fitvc: cannot allocate isvec',0,0)
       Nao2 = nbf_ao_mxnbf_ce*nbf_ao_mxnbf_ce
-      if(.not.MA_Push_Get(MT_Dbl,Nao2,'pp array',l_p,k_p))
+      if(.not.MA_Push_Get(MT_Dbl,Nao2*nmat,'pp array',l_p,k_p))
      &  call errquit('dft_fitcd: cannot allocate p',0,  MA_ERR)
 c
       call int_mem_2e3c(maxg, mscratch_2e3c)
@@ -215,10 +215,12 @@ c     schwartz with CDmax=1 for incore ints reading
      A                             ipoint+nao2*nbf_cd-1,n3c_dbl
                               call errquit('dft_fitvc: out of i3c ',0,0)
                            endif
-                           call dgemv('N',Nao2,nbf_cd,qscale,
-     &                          i3c_eri(ipoint),Nao2,
-     C                          CD_coef,1,
-     D                          0.D0,Dbl_MB(isvec),1)
+                           do imat=1,nmat
+                             call dgemv('N',Nao2,nbf_cd,qscale,
+     &                            i3c_eri(ipoint),Nao2,
+     C                            CD_coef(1,imat),1,
+     D                            0.D0,Dbl_MB(isvec+(imat-1)*nao2),1)
+                           enddo
                            ipoint = ipoint + nao2*nbf_cd
                         else
                            call dcopy(Nao2*nmat,0.D0,0,dbl_mb(isvec),1)
@@ -250,10 +252,12 @@ c
 c     Multiply the matrix of 3-ctr ERIs by the CD expansion coefficients.
 c     
                                     q1=qscale*qsym
+                                    do imat=1,nmat
                                     call dgemv('N',Nao2,nshbf_cd,q1,
      &                                   Dbl_MB(iERI),Nao2,
-     C                                   CD_coef(1+nfunz,1),
-     &                                   1,1.D0,Dbl_MB(isvec),1)
+     C                                   CD_coef(1+nfunz,imat),1,1.0D0,
+     &                                   Dbl_MB(isvec+(imat-1)*nao2),1)
+                                    enddo
                                  endif
                               endif ! schw on VCoul_est
 c
@@ -264,11 +268,13 @@ c
 c
 c     Scatter the computed values of Vcoul.
 c           
-
+                          do imat=1,nmat
                            call dft_copyto(
      I                          nbf_at_d,nshbfd,nshbfc,
-     I                          dbl_mb(k_p),dbl_mb(isvec),
+     I                          dbl_mb(k_p+(imat-1)*nbf_at_d*nbf_at_c),
+     D                          dbl_mb(isvec+(imat-1)*nao2),
      A                          icount_d,icount_c)
+                          enddo
                         endif   ! schwartz with cdmax
 
                      icount_d=icount_d+nshbfd
@@ -290,10 +296,12 @@ c     add extra bit to ipoint if ishd_1 is truncated
 c     ga_put only if anything ever survived the schwarz scr
                
                if(v_nonzero)
-     G              call ga_put(g_vc, 
+                    do imat=1,nmat
+     G              call ga_put(g_vc(imat), 
      B              bf_lo_d, bf_hi_d, 
      C              bf_lo_c,bf_hi_c,
-     C              dbl_mb(k_p), nbf_at_d)
+     C              dbl_mb(k_p+(imat-1)*nbf_at_c*nbf_at_d), nbf_at_d)
+                    enddo
 
                if(use_nxtask) then
                   n1 = nxtask(nproc,1)
@@ -325,6 +333,12 @@ c
 c     Obtain the matrix of 2-ctr ERIs.
 c      
 c
+      if (ADFT) then
+        call daxpy(nbf_cd,-1d0,cd_coef(1,nmat+1),1,cd_coef,1)
+        if (ipol.gt.1) then
+          call daxpy(nbf_cd,-1d0,cd_coef(1,nmat+2),1,cd_coef(1,2),1)
+        endif
+      endif
 c
 c     Compute Ecoul2 only for the first set of fit coefficients
 c     !!! Should modify this so that nothing is done if nmat > 1
