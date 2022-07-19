@@ -24,7 +24,7 @@ c
       character(len=9), parameter :: pname = 'gw_init: '
       character(len=255) :: basisname, scftype
 
-      logical init
+      logical init,dummy
 c
       logical int_normalize, int_norm_2c
       external int_normalize, int_norm_2c
@@ -331,7 +331,9 @@ c
 c
       call grid_cleanup(.false.)
       call gw_memory(pars)
+
       call gw_ri_init(pars)
+      dummy = ma_verify_allocator_stuff()
 c
       pars%fdstep = 0.0005d0
 
@@ -352,7 +354,7 @@ c
       endif
 
 #endif
-
+      
       return
       end subroutine gw_init
 

@@ -39,8 +39,8 @@ c
       double precision Exc(2)
       double precision rho_n
       integer nmat              ! [input] number of XC matrices to make;
-      double precision tmat(*)  ! XC fit
 c                               !         only used for lhs cpks
+      double precision tmat(*)  ! XC fit
       integer calc_type         ! what to calculate [input]
 c                               !   1 = XC matrices for SCF
 c                               !   2 = XC matrices for CPKS LHS

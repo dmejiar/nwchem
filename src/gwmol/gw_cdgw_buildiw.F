@@ -280,7 +280,7 @@ c
         endif
 #endif
 #ifdef GWDEBUG
-        if (main) write(luout,*) '     ## inverse ',util_wallsec()-t0
+        if (main) write(luout,*) '     ## factorize ',util_wallsec()-t0
 #endif
 
         !
@@ -454,6 +454,7 @@ c
 
 #ifdef GWDEBUG
         if (main) write(luout,*) '     ## transf. ',util_wallsec()-t0
+        call util_flush(luout)
 #endif
 
 #ifndef GWCMPLX

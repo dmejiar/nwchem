@@ -110,11 +110,11 @@
 
 c          if (eviter.lt.10) then
             if (myul.lt.ulqp) then
-              Eout = Enew(llmo+iqp,isp) + 0.005d0
+              Eout = Enew(llmo+iqp,isp) + 0.01d0
             elseif (myll.gt.llqp) then
-              Eout = Enew(llmo+iqp-2,isp) - 0.005d0
+              Eout = Enew(llmo+iqp-2,isp) - 0.01d0
             else
-              Eout = Eout + sign(0.005d0,Eout)
+              Eout = Eout + sign(0.01d0,Eout)
             endif
 c          endif
 
