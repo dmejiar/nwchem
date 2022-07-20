@@ -124,6 +124,7 @@ c
 c
       character*(nw_max_path_len) cdfit
 c
+      double precision gradient
       double precision dabsmax
       external nxtask,schwarz_shell,dabsmax
       double precision ddot
@@ -178,7 +179,7 @@ c
              call eaf_errmsg(ierr, errmsg)
              write(LuOut,*) ' IO error message ',
      $            errmsg(1:inp_strlen(errmsg))
-             call errquit('dftg_fitcd: write failed',0, DISK_ERR)
+             call errquit('dftg_fitcd: read failed',0, DISK_ERR)
           endif
         enddo
         if (adft) then
@@ -189,7 +190,7 @@ c
                call eaf_errmsg(ierr, errmsg)
                write(LuOut,*) ' IO error message ',
      $              errmsg(1:inp_strlen(errmsg))
-               call errquit('dftg_fitcd: write failed',0, DISK_ERR)
+               call errquit('dftg_fitcd: read failed',0, DISK_ERR)
             endif
           enddo
         endif
@@ -453,6 +454,11 @@ c
          call output(db, 1, nbf_cd, 1, 3*nat, nbf_cd, 3*nat, 1)
 c!!!         call dfill(nbf_cd*3*nat, 0.0d0, db, 1)
       endif
+
+
+      if(.not.MA_Push_Get(MT_Dbl,lbuf,'gather vector',l_p,k_p))
+     &  call errquit('dft_fitcd: cannot allocate gather vector',0,
+     &       MA_ERR)
 c
 c     2el. 2-c integral derivatives
 c
@@ -467,12 +473,12 @@ c     pairs of shells on different centers, saving a small amount
 c     of work
 c
       if (adft) then
-        call daxpy(nbf_cd,1d0,cd_coef(1,2*nfit+1),1,cd_coef(1,nfit+1),1)
+        call daxpy(nbf_cd,1d0,cd_coef(1,nfit+1),1,cd_coef(1,2*nfit+1),1)
         if (nfit.gt.1) then
-          call daxpy(nbf_cd,1d0,cd_coef(1,3*nfit),1,cd_coef(1,2*nfit),1)
+          call daxpy(nbf_cd,1d0,cd_coef(1,2*nfit),1,cd_coef(1,3*nfit),1)
         endif
       elseif (nfit.gt.1) then
-        call daxpy(nbf_cd,1d0,cd_coef(1,2),1,cd_coef(1,1),1)
+        call daxpy(nbf_cd,1d0,cd_coef(1,1),1,cd_coef(1,2),1)
       endif
 
       do 304 iatom = 1, nat
@@ -509,59 +515,24 @@ c
 c
                if (do_force) then
 c
+               call dcopy(nshbfq*nshbfp,0d0,0,dbl_mb(k_p),1)
+               call bldcblk(nshbfq,nshbfp,ifirstq,ifirstp,
+     $                      dbl_mb(k_p),cd_coef,cd_coef(1,2*nfit+1))
+               if (adft) then
+                 if (nfit.gt.1) then
+                   call bldcblk(nshbfq,nshbfp,ifirstq,ifirstp,
+     $                      dbl_mb(k_p),cd_coef(1,2),cd_coef(1,3*nfit))
+                 endif
+               endif
+
                icount = 1
                do iat = 1, 2
                   if (idatom(iat).gt.0)then
-c icart=1
-                        call dgemv('n', nshbfq, nshbfp,
-     &                             1.d0, buf(icount), nshbfq,
-     &                             CD_coef(ifirstp,2*nfit+1), 1,
-     &                             0.d0, vec, 1)
-                        if (adft.and.nfit.ge.1) then
-                          call dgemv('n', nshbfq, nshbfp,
-     &                             1.d0, buf(icount), nshbfq,
-     &                             CD_coef(ifirstp,3*nfit), 1,
-     &                             0.d0, vec(3*nshbfq+1), 1)
-                        endif
-                        icount = icount + Nintegrals
-c icart=2
-                        call dgemv('n', nshbfq, nshbfp,
-     &                             1.d0, buf(icount), nshbfq,
-     &                             CD_coef(ifirstp,2*nfit+1), 1,
-     &                             0.d0, vec(nshbfq+1), 1)
-                        if (adft.and.nfit.ge.1) then
-                          call dgemv('n', nshbfq, nshbfp,
-     &                             1.d0, buf(icount), nshbfq,
-     &                             CD_coef(ifirstp,3*nfit), 1,
-     &                             0.d0, vec(4*nshbfq+1), 1)
-                        endif
-                        icount = icount + Nintegrals
-c icart=3
-                        call dgemv('n', nshbfq, nshbfp,
-     &                             1.d0, buf(icount), nshbfq,
-     &                             CD_coef(ifirstp,2*nfit+1), 1,
-     &                             0.d0, vec(2*nshbfq+1), 1)
-                        if (adft.and.nfit.ge.1) then
-                          call dgemv('n', nshbfq, nshbfp,
-     &                             1.d0, buf(icount), nshbfq,
-     &                             CD_coef(ifirstp,3*nfit), 1,
-     &                             0.d0, vec(5*nshbfq+1), 1)
-                        endif
-                        icount = icount + Nintegrals
-
-                     call dgemv('t', nshbfq, 3,
-     &                          fac, vec, nshbfq,
-     &                          CD_coef(ifirstq,1), 1,
-     &                          1.d0, force(1,idatom(iat)), 1)
-                     if (adft.and.nfit.ge.1) then
-                       call dgemv('t', nshbfq, 3,
-     &                            fac, vec(3*nshbfq+1), nshbfq,
-     &                            CD_coef(ifirstq,2), 1,
-     &                            1.d0, force(1,idatom(iat)), 1)
-                     endif
-                  else
-                     icount = icount + 3*Nintegrals
+                    call dgemv('t',Nintegrals,3,fac,buf(icount),
+     $                    Nintegrals,dbl_mb(k_p),1,1.0d0,
+     $                    force(1,idatom(iat)),1)
                   endif
+                  icount = icount + 3*Nintegrals
                enddo
 c
                else if (do_hess) then
@@ -588,6 +559,23 @@ c
       if (do_cpks_r) then
          write(*,*)'*** Do global sum of db'
       endif
+
+      if (.not.MA_chop_stack(l_p))
+     &     call errquit('dftg_cdfit_gen: cannot pop l_p',1, MA_ERR)
 c
       return 
       end 
+
+      subroutine bldcblk(na,nb,inia,inib,buf,cd,cdxc)
+      implicit none
+      integer na,nb,inia,inib
+      double precision buf(na,nb),cd(*),cdxc(*)
+
+      integer i,j
+      do j=1,nb
+        do i=1,na
+          buf(i,j) = 0.5d0*(cd(i+inia-1)*cdxc(j+inib-1) +
+     $               cdxc(i+inia-1)*cd(j+inib-1))
+        enddo
+      enddo
+      end

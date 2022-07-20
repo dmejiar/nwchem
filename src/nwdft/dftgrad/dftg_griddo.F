@@ -204,6 +204,8 @@ c
       
 c Daniel (1-11-13): Added XC-third derivative stuff to prevent problems
 c with subroutine calls after this one.
+      write(*,*) cd_coef(1:nbf_cd)
+
       call grid_loop(.true.,
      ,     nops,
      ,     oprint,grad,g_dens,

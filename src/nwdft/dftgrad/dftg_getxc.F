@@ -74,19 +74,19 @@ c
 
       if (adft) then
         nbf_bas = nbf_cd
-        basis = xc_bas_han
+        basis = cd_bas_han
         if (.not.ma_push_get
      $       (mt_int,natom*2,'cntoce map',lcetobfr,icetobfr))
      $       call errquit('dft_scf:push_get failed', 13, MA_ERR)
         if (.not.ma_push_get
-     $       (mt_int,nshells_xc,'cntoce map',lcntoce,icntoce))
+     $       (mt_int,nshells_cd,'cntoce map',lcntoce,icntoce))
      $       call errquit('dft_scf:push_get failed', 13, MA_ERR)
         if (.not.ma_push_get
-     $       (mt_int,nshells_xc*2,'cntoce map',lcntobfr,icntobfr))
+     $       (mt_int,nshells_cd*2,'cntoce map',lcntobfr,icntobfr))
      $       call errquit('dft_scf:push_get failed', 13, MA_ERR)
-        call dcopy(natom*2,cetobfr,1,int_mb(icetobfr),1)
-        call build_maps(xc_bas_han, int_mb(icntoce), int_mb(icntobfr), 
-     $                  cetobfr, natom, nshells_xc)
+        call icopy(natom*2,cetobfr,1,int_mb(icetobfr),1)
+        call build_maps(cd_bas_han, int_mb(icntoce), int_mb(icntobfr), 
+     $                  cetobfr, natom, nshells_cd)
         if (.not.ma_chop_stack(lcntoce))
      $     call errquit('dft_gradient: cannot pop stack',0, MA_ERR)
       else
@@ -111,7 +111,7 @@ c
          oreopen=.false.
 
          if (adft) then
-            call dcopy(2*natom,int_mb(icetobfr),1,cetobfr,1)
+            call icopy(2*natom,int_mb(icetobfr),1,cetobfr,1)
             if (.not.ma_chop_stack(lcetobfr))
      $       call errquit('dft_gradient: cannot pop stack',0, MA_ERR)
          endif

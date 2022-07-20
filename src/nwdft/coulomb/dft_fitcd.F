@@ -222,21 +222,21 @@ c     Apply constraint correction to fits
 c
       F(2) = ddot(nbf_cd,DBL_mb(icgtf),1,DBL_MB(iTcgtf),1)
 c
-      do ifit = 1, nfit
+c      do ifit = 1, nfit
 c
 c        Compute Lagrange multiplier, alpha
 c
-         F(1) = ddot(nbf_cd,DBL_mb(icgtf),1,CD_coef(1,ifit),1)
-         alpha = (Q(ifit) - F(1))/F(2)
+c         F(1) = ddot(nbf_cd,DBL_mb(icgtf),1,CD_coef(1,ifit),1)
+c         alpha = (Q(ifit) - F(1))/F(2)
 c         write(*,*)'F alpha',f(1),f(2),alpha
 c
 c        Correct unconstrained coefficients by alpha*S**(-1)*cgtf
 c
-         do j = 1,nbf_cd
-            CD_coef(j,ifit) = CD_coef(j,ifit)
-     &                      + alpha*DBL_MB(iTcgtf+j-1)
-         enddo
-      enddo
+c         do j = 1,nbf_cd
+c            CD_coef(j,ifit) = CD_coef(j,ifit)
+c     &                      + alpha*DBL_MB(iTcgtf+j-1)
+c         enddo
+c      enddo
 c
       if (.not.ma_pop_stack(lTcgtf))
      &   call errquit('dft_fitcd: cannot pop stack',0, MA_ERR)

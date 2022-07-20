@@ -134,7 +134,7 @@ c to the TDDFT gradients.
       integer basis
 
       if (adft) then
-        basis = xc_bas_han
+        basis = cd_bas_han
       else
         basis = ao_bas_han
       endif

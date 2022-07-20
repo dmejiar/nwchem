@@ -60,14 +60,14 @@ c
             coeff(mu-inizia+1) = cd_coef(ibf(mu),ispin)
           enddo
 
-          call dgemv('n',3*nq,nnia,1d0,delchi(1,1,inizia),coeff,1,0d0,
-     $                scr,1)     
+          call dgemv('n',3*nq,nnia,1d0,delchi(1,1,inizia),3*nq,coeff,1,
+     $                0d0,scr,1)     
           call dgemv('t',nq,3,1d0,scr,nq,amat(1,ispin),1,1d0,
      $                gradient,1)
 
           if (grad) then
-            call dgemv('n',6*nq,nnia,1d0,heschi(1,1,inizia),coeff,1,0d0,
-     $                  scr,1)
+            call dgemv('n',6*nq,nnia,1d0,heschi(1,1,inizia),6*nq,coeff,
+     $                  1,0d0,scr,1)
             gradient(1) = gradient(1) + 
      $           ddot(3*nq,scr,1,cmat(1,1,ispin),1)
             gradient(2) = gradient(2) +
@@ -81,8 +81,8 @@ c
           endif
 
           if (kslap) then
-            call dgemv('n',10*nq,nnia,1d0,d3chi(1,1,inizia),coeff,1,0d0,
-     $                  scr,1)       
+            call dgemv('n',10*nq,nnia,1d0,d3chi(1,1,inizia),10*nq,
+     $                  coeff,1,0d0,scr,1)       
             scr(:,1) = scr(:,1) + scr(:,4) + scr(:,6)
             gradient(1) = gradient(1) + ddot(nq,scr,1,lmat(1,ispin),1)
             scr(:,1) = scr(:,2) + scr(:,7) + scr(:,9)

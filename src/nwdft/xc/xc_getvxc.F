@@ -219,6 +219,7 @@ c
      &                   dbl_mb(iTmat),1)
             endif
 
+
             call xc_fitv(rtdb,Dbl_MB(iTmat), nTrows, nTcols,
      &           g_vxc, g_xcinv, IOLGC)  
 

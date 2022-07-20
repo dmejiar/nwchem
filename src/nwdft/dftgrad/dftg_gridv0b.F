@@ -94,7 +94,7 @@ c
       double precision xyz(3,natoms),xyzm(3,natoms)
       integer iandex(natoms)
       integer iniz(natoms), ifin(natoms)
-      integer ibf_ao(nbf_ao),curatoms(natoms)
+      integer ibf_ao(*),curatoms(natoms)
       integer bas_cent_info(3,natoms),bas_cset_info(6,*)
       logical docset(*)
       double precision rchi_atom(natoms),rdelchi_atom(natoms)
@@ -181,6 +181,7 @@ c Daniel (2-14-13): Fixed the indentation in this routine.
       k_Acof2 = 0
       k_Ccof2 = 0
       k_Mcof2 = 0
+
 c
       Ex=0
       Ec=0
@@ -195,7 +196,7 @@ c
       endif
 
       if (adft) then
-        basis = xc_bas_han
+        basis = cd_bas_han
         mbf_ao = nbf_cd
       else
         basis = ao_bas_han
@@ -283,7 +284,7 @@ c      do_pertdens = do_gxc
       if (.not. do_pertdens) then
         if (adft) then
           call xc_rhogen_adft(tol_rho,natoms,ipol,nqpts,
-     $         nbf_xc,mbf_ao,max_at_bf,grad,(ipol*(ipol+1))/2,
+     $         nbf_cd,mbf_ao,max_at_bf,grad,(ipol*(ipol+1))/2,
      $         dbl_mb(ichi_ao),dbl_mb(idelchi_ao),dbl_mb(iheschi_ao),
      $         ibf_ao, iniz, ifin, rho, delrho, dbl_mb(ilap), rchi_atom,
      $         rdelchi_atom, cetobfr, wmax, kslap, cd_coef)
@@ -434,7 +435,7 @@ c
          if (odftps) call pstat_on(ps_qv0b)
          if (adft) then
            call dftg_quadv0_b_adft(ictr_buf,ldew,basis,ipol,grad,
-     $          kslap,nbf_xc,mbf_ao,natoms,nqpts,dbl_mb(ichi_ao),
+     $          kslap,nbf_cd,mbf_ao,natoms,nqpts,dbl_mb(ichi_ao),
      $          dbl_mb(idelchi_ao),dbl_mb(iheschi_ao),
      $          dbl_mb(id3chi_ao),Amat,Cmat,Lmat,dbl_mb(i_ccdel),
      $          ibf_ao,iniz,ifin,cetobfr,force,oactive,cd_coef)
@@ -598,7 +599,7 @@ c We calculate derivatives of quadrature weights by reusing the code
 c from the ground state gradients.
         call dftg_gridpart(d_qwght, qwght, qxyz, xyz, xyzm, rq,
      1    ictr_buf, natoms_l, iandex, nqpts,
-     2    whichssw, rad, expo)
+     2    whichssw, rad, expo, basis)
 c Construct the quadrature weight derivatives multiplied by the 
 c XC-kernel.  The call to the following routine is identical to the 
 c call for ground state gradients, but func contains the XC-kernel
@@ -763,7 +764,7 @@ c
          call dftg_gridpart(d_qwght,qwght, qxyz, xyz,xyzm, 
      .        rq, ictr_buf, natoms_l, iandex,
      .        nqpts,whichssw,
-     ,        rad,expo)
+     ,        rad,expo,basis)
          call dftg_wderiv(ictr_buf, natoms, nqpts, nqpts, 
      .        iandex, 
      &        natoms_l, func, d_qwght,
