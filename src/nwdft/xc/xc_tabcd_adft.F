@@ -135,28 +135,32 @@ c
           if(GRAD) FUNC_MAXI = max(FUNC_MAXI,rdelchi_atom(iat))
           doitt=(AC_MAX*FUNC_MAXI*nbfia).ge.tol_rho
           call endtimer(monitor_screen2)
-          if (.not.doitt) cycle
+
+          if (.not.doitt) goto 430
+
+          call starttimer(monitor_mult1)
           do ii = 1, ipol
-            call starttimer(monitor_mult1)
-            call dgemv('T',nnia,nq,chi(1,inizia),nq,amat(1,ii,imat),1,
-     $                 0d0, coeff,1)
+            call dgemv('T',nq,nnia,1d0,chi(1,inizia),nq,amat(1,ii,imat),
+     $                  1, 0d0, coeff,1)
             if (grad) then
-              call dgemv('T',nnia,3*nq,delchi(1,1,inizia),3*nq,
+              call dgemv('T',3*nq,nnia,1d0,delchi(1,1,inizia),3*nq,
      $                    cmat(1,1,ii,imat),1,1d0,coeff,1)
             endif
             if (kslap) then
-              call dgemv('T',nnia,nq,heschi(1,1,inizia),6*nq,
+              call dgemv('T',nq,nnia,1d0,heschi(1,1,inizia),6*nq,
      $                    lmat(1,ii,imat),1,1d0,coeff,1)         
-              call dgemv('T',nnia,nq,heschi(1,4,inizia),6*nq,
+              call dgemv('T',nq,nnia,1d0,heschi(1,4,inizia),6*nq,
      $                    lmat(1,ii,imat),1,1d0,coeff,1)         
-              call dgemv('T',nnia,nq,heschi(1,6,inizia),6*nq,
+              call dgemv('T',nq,nnia,1d0,heschi(1,6,inizia),6*nq,
      $                    lmat(1,ii,imat),1,1d0,coeff,1)         
             endif
 
             do mu=inizia,ifinia
-              xc_coef(ibf(mu),ipol) = coeff(mu-inizia+1)
+              xc_coef(ibf(mu),ipol) = xc_coef(ibf(mu),ipol) + 
+     $                                coeff(mu-inizia+1)
             enddo
           enddo
+          call endtimer(monitor_mult1)
 
   430   continue ! iat0 loop
   500 continue ! imat loop

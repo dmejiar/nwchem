@@ -100,13 +100,14 @@ c        screening parameters
 c
          FUNC_MAXI = rchi_atom(iat)
          if(grad) FUNC_MAXI = max(FUNC_MAXI,rdelchi_atom(iat))
-         P_MAXI = dabsmax(nbfia,cd_coef(1,1))
-         if (ipol.gt.1) P_MAXI = max(P_MAXI,dabsmax(cd_coef(1,2)))
+         P_MAXI = dabsmax(nbfia,cd_coef(ifirst,1))
+         if (ipol.gt.1) 
+     $      P_MAXI = max(P_MAXI,dabsmax(nbfia,cd_coef(ifirst,2)))
          if (wmax*FUNC_MAXI*P_MAXI*nbfia.lt.tol_rho) goto 230
 
          do ii=1,ipol
            do mu=inizia,ifinia
-             coeff(mu-inizia+1) = cd_coef(ibf(mu),ipol)
+             coeff(mu-inizia+1) = cd_coef(ibf(mu),ii)
            enddo
 
            call dgemv('N',nq,nnia,1d0,chi(1,inizia),nq,

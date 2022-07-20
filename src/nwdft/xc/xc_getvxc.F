@@ -80,7 +80,7 @@ c
                               !<   correlation 
                               !< - nExc=2: Exc(1) = exchange,
                               !<           Exc(2) = correlation 
-      double precision cd_coef(nbf_cd,2*ipol)
+      double precision cd_coef(nbf_cd,*)
 c
 c This driver routine solves for the XC energy and potential (Vxc) via 
 c numerical quadrature methods. The results are obtained either by direct 

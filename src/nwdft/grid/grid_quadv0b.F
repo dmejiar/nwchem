@@ -406,8 +406,8 @@ c AJL/End
               if(xc_chkdelrq()) call
      X             xc_delrhodotr(nqpts,ipol,qxyz,rho,delrho,ttau)
             else
-              call xc_rhogen_adft(tol_rho, natoms, natoms, ipol, nqpts, 
-     .          nbf_xc, mbf_xc, mxnbf_ce, grad, npol, dbl_mb(ichi_ao),
+              call xc_rhogen_adft(tol_rho, natoms, ipol, nqpts, 
+     .          nbf_xc, mbf_ao, mxnbf_ce, grad, npol, dbl_mb(ichi_ao),
      .          dbl_mb(idelchi_ao), dbl_mb(iheschi_ao), ibf_ao, iniz,
      .          ifin, rho, delrho, dbl_mb(ilap), rchi_atom,
      .          rdelchi_atom, int_mb(icetobfr), wmax, kslap, tmat)

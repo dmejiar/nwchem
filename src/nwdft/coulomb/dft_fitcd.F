@@ -44,7 +44,7 @@ c
      &                 rho_int
       integer nproc, me, 
      &        nscr,max1e, nscr1e, j,   
-     &        ifirst, ilast, nshbf, ish, lmiss, ifit
+     &        ifirst, ilast, nshbf, ish, lmiss, ifit, jfit
       integer iTvec, lTvec, lcgtf, icgtf,
      &     lscr, iscr, iqatom, lqatom, iqshell_cd, lqshell_cd, 
      &     iqshell_lab, lqshell_lab, lqshtyp_cd, iqshtyp_cd,
@@ -343,7 +343,12 @@ c
 c     calculation of Ecoul1
 c
       if (.not.derfit) then
-         Ecoul1 = ddot(nbf_cd,DBL_mb(iTvec),1,CD_coef,1)
+         do ifit=1,nfit
+           do jfit=1,nfit
+             Ecoul1 = ddot(nbf_cd,DBL_mb(iTvec+(ifit-1)*nbf_cd),1,
+     $                CD_coef(1,jfit),1)
+           enddo
+         enddo
       endif
 c      
 c     Compute the integrated electron density from the fit.

@@ -141,7 +141,9 @@ c
 c
       if (.not.do_init) call errquit(
      C     ' dft_fitvc: do_init has to be true',0,0)
-      call ga_zero(g_vc)
+      do imat=1,nmat
+        call ga_zero(g_vc(imat))
+      enddo
       if(.not.MA_Push_Get(MT_int,ncenters,'at list',l_at,k_at))
      &  call errquit('dft_fitvc: cannot allocate at list',0, MA_ERR)
 c     sort atoms list based on decreasing atomic weight
@@ -299,7 +301,8 @@ c     ga_put only if anything ever survived the schwarz scr
                     do imat=1,nmat
                       call ga_put(g_vc(imat), 
      B                     bf_lo_d, bf_hi_d,bf_lo_c,bf_hi_c,
-     C                 dbl_mb(k_p+(imat-1)*nbf_at_c*nbf_at_d), nbf_at_d)
+     C                 dbl_mb(k_p+(imat-1)*nbf_at_c*nbf_at_d), nbf_at_d,
+     C                 1d0)
                     enddo
                endif
 
@@ -336,7 +339,7 @@ c
       if (ADFT) then
         call daxpy(nbf_cd,-1d0,cd_coef(1,nmat+1),1,cd_coef,1)
         if (ipol.gt.1) then
-          call daxpy(nbf_cd,-1d0,cd_coef(1,nmat+2),1,cd_coef(1,2),1)
+          call daxpy(nbf_cd,-1d0,cd_coef(1,nmat+2),1,cd_coef(1,1),1)
         endif
       endif
 c
