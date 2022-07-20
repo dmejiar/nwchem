@@ -405,6 +405,8 @@ c
      .        natoms,
      &                  .false., 0d0, .false.)
          if (odftps) call pstat_off(ps_fitcd)
+      else
+         Ecoul = 0d0
       endif
 c     
 c     

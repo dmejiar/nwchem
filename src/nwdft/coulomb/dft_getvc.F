@@ -41,6 +41,8 @@ c
       call ga_sync
 c
       if( iVcoul_opt.eq.0 )then
+        call ga_zero(g_vc(1))
+        if (ipol.gt.1) call ga_zero(g_vc(2))
 c
       else if( iVcoul_opt.eq.1 )then
 c       Compute the Coulomb potential via a LSQ fitting procedure.
