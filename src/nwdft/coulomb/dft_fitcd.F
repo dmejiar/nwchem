@@ -66,8 +66,8 @@ c
 c     Fit electronic charge density. The fitting coefficients are obtained by 
 c     solving the normal equations for a standard linear least squares problem.
 c      
-      if (.not.derfit .and. nfit.ne.1) then
-         call errquit('dft_fitcd: nfit must be 1 for regular fits',0,
+      if (.not.derfit .and. nfit.gt.2) then
+         call errquit('dft_fitcd: nfit must be <3 for regular fits',0,
      &       INPUT_ERR)
       endif
       oprint = util_print('coulomb fit', print_high)
@@ -283,18 +283,18 @@ c
 c      
 c     Compute the integrated electron density from the fit.
 c      
-      do ifit = 1, nfit
-         rho_int = ddot(nbf_cd,CD_coef(1,ifit),1,Dbl_MB(icgtf),1)
-         if (dabs(rho_int-Q(ifit)).gt.0.001d0)then
-            write(*,*)' rho_int check 1, density',ifit,' = ',rho_int
-            write(*,*)' CD cgtf',dabsmax(nbf_cd,cd_coef),
-     D           dabsmax(nbf_cd,Dbl_MB(icgtf))
-            call errquit('dft_fitcd: problem w/fitted density',911,
-     &       UNKNOWN_ERR)
+c      do ifit = 1, nfit
+c         rho_int = ddot(nbf_cd,CD_coef(1,ifit),1,Dbl_MB(icgtf),1)
+c         if (dabs(rho_int-Q(ifit)).gt.0.001d0)then
+c            write(*,*)' rho_int check 1, density',ifit,' = ',rho_int
+c            write(*,*)' CD cgtf',dabsmax(nbf_cd,cd_coef),
+c     D           dabsmax(nbf_cd,Dbl_MB(icgtf))
+c            call errquit('dft_fitcd: problem w/fitted density',911,
+c     &       UNKNOWN_ERR)
 c     write(*,*)' Dbl_MB(icgtf) = ',(Dbl_MB(icgtf+i),i=0,nbf_cd-1)
 c     write(*,*)' CD_coef = ',(CD_coef(i,ifit),i=1,nbf_cd)
-         endif
-      enddo
+c         endif
+c      enddo
 cedo      call ga_sync
 c      if (derfit) then
 c         write(*,*)'Fit coefficients:'
@@ -342,10 +342,12 @@ c
 c
 c     calculation of Ecoul1
 c
+      Ecoul1 = 0.0d0
       if (.not.derfit) then
          do ifit=1,nfit
            do jfit=1,nfit
-             Ecoul1 = ddot(nbf_cd,DBL_mb(iTvec+(ifit-1)*nbf_cd),1,
+             Ecoul1 = Ecoul1+
+     $                ddot(nbf_cd,DBL_mb(iTvec+(ifit-1)*nbf_cd),1,
      $                CD_coef(1,jfit),1)
            enddo
          enddo
@@ -357,8 +359,8 @@ c
          rho_int = ddot(nbf_cd,CD_coef(1,ifit),1,Dbl_MB(icgtf),1)
          if (dabs(rho_int-Q(ifit)).gt.0.001d0) then
             write(*,*)' rho_int check 2, density',ifit,' = ',rho_int
-            call errquit('dft_fitcd: problem w/fitted density',911,
-     &       UNKNOWN_ERR)
+c            call errquit('dft_fitcd: problem w/fitted density',911,
+c     &       UNKNOWN_ERR)
 c     write(*,*)' Dbl_MB(icgtf) = ',(Dbl_MB(icgtf+i),i=0,nbf_cd-1)
 c     write(*,*)' CD_coef = ',(CD_coef(i,ifit),i=1,nbf_cd)
          endif

@@ -477,8 +477,8 @@ c
         if (nfit.gt.1) then
           call daxpy(nbf_cd,1d0,cd_coef(1,2*nfit),1,cd_coef(1,3*nfit),1)
         endif
-      elseif (nfit.gt.1) then
-        call daxpy(nbf_cd,1d0,cd_coef(1,1),1,cd_coef(1,2),1)
+      else
+        call daxpy(nbf_cd,1d0,cd_coef(1,2),1,cd_coef(1,1),1)
       endif
 
       do 304 iatom = 1, nat

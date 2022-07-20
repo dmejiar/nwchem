@@ -156,7 +156,7 @@ c
             endif
 
             do mu=inizia,ifinia
-              xc_coef(ibf(mu),ipol) = xc_coef(ibf(mu),ipol) + 
+              xc_coef(ibf(mu),ii) = xc_coef(ibf(mu),ii) + 
      $                                coeff(mu-inizia+1)
             enddo
           enddo

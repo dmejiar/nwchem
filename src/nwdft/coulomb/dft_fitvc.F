@@ -67,9 +67,6 @@ c
 c
       if(dermat) call errquit(
      C     'fitvc: dermat not coded yet',0,0)
-      if (.not.dermat .and. nmat.ne.1) then
-         call errquit('nmat must be 1 for regular fit in dft_fitvc',0,0)
-      endif
 
       oprint_ioinfo = util_print('io info',print_debug)
 c
@@ -186,7 +183,7 @@ c
      &              call errquit('Exiting in dft_fitcd',110, BASIS_ERR)
                icount_c=0
 czero k_p
-               call dcopy(nbf_at_d*nbf_at_c,0d0,0,dbl_mb(k_p),1)
+               call dcopy(nmat*nbf_at_d*nbf_at_c,0d0,0,dbl_mb(k_p),1)
                do ishc=sh_lo_c,sh_hi_c
 
                   if( .not. bas_cn2bfr( AO_bas_han,ishc,ifirstc,ilastc))
@@ -306,8 +303,7 @@ c     ga_put only if anything ever survived the schwarz scr
                     do imat=1,nmat
                       call ga_put(g_vc(imat), 
      B                     bf_lo_d, bf_hi_d,bf_lo_c,bf_hi_c,
-     C                 dbl_mb(k_p+(imat-1)*nbf_at_c*nbf_at_d), nbf_at_d,
-     C                 1d0)
+     C                 dbl_mb(k_p+(imat-1)*nbf_at_c*nbf_at_d), nbf_at_d)
                     enddo
                endif
 
@@ -328,8 +324,11 @@ c
      &     call errquit('dft_fitvc: cannot pop stack',0,0)
       if(use_nxtask) n1 = nxtask(-nproc,1)
       call ga_mask_sync(.not.use_nxtask,.false.)
-      call ga_symmetrize(g_vc)
-      if(oprint_ioinfo) call ga_print(g_vc)
+
+      do imat=1,nmat
+        call ga_symmetrize(g_vc(imat))
+        if(oprint_ioinfo) call ga_print(g_vc(imat))
+      enddo
 c      
 c
 c     Compute the Coulombic self-energy of the fitted charge density.
