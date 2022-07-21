@@ -119,7 +119,7 @@ c
       logical do_force, do_cpks_r, do_hess
       integer ierr,LU
       integer k_at,l_at,atom_p_in,atom_q_in,nat_used
-      integer ifit
+      integer ifit,lencd
       character*255 errmsg
 c
       character*(nw_max_path_len) cdfit
@@ -206,8 +206,11 @@ c
         endif
       endif
 c
+      lencd = nbf_cd*nfit
+      if (adft) lencd = 2*lencd
+
       call ga_brdcst(Msg_dftg_cdf,CD_coef,
-     M     ma_sizeof(MT_DBL,nbf_cd,MT_BYTE),0)
+     M     ma_sizeof(MT_DBL,lencd,MT_BYTE),0)
 c
       call dcopy(nbf_cd,cd_coef(1,1),1,cd_coef(1,2*nfit+1),1)
       if (nfit.gt.1) then
@@ -477,7 +480,7 @@ c
         if (nfit.gt.1) then
           call daxpy(nbf_cd,1d0,cd_coef(1,2*nfit),1,cd_coef(1,3*nfit),1)
         endif
-      else
+      elseif(nfit.gt.1)then
         call daxpy(nbf_cd,1d0,cd_coef(1,2),1,cd_coef(1,1),1)
       endif
 
@@ -574,7 +577,7 @@ c
       integer i,j
       do j=1,nb
         do i=1,na
-          buf(i,j) = 0.5d0*(cd(i+inia-1)*cdxc(j+inib-1) +
+          buf(i,j) = buf(i,j) + 0.5d0*(cd(i+inia-1)*cdxc(j+inib-1) +
      $               cdxc(i+inia-1)*cd(j+inib-1))
         enddo
       enddo

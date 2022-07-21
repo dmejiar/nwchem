@@ -685,11 +685,13 @@ c
       endif
 c
       if(adft) then
+         if (odftps) call pstat_on(ps_tabcd)
          call xc_tabcd_adft(tol_rho,amat,cmat,lmat,dbl_mb(ichi_ao),
      $   dbl_mb(idelchi_ao),dbl_mb(iheschi_ao),
      $   nmat,ipol,nqpts,nbf_xc,mxnbf_ce,grad,xc_bas_han,natoms,iniz,
      $   ifin,ibf_ao,rchi_atom,rdelchi_atom,int_mb(icetobfr),kslap,
      $   tmat(nbf_xc*ipol+1))
+         if (odftps) call pstat_off(ps_tabcd)
       elseif(xcfit) then
          call grid_xcfit(xc_bas_han,nbf_xc,tmat,grad,
      ,     iniz,ifin,ibf_ao,ccoef,expo,nscr,iscr,hess,
