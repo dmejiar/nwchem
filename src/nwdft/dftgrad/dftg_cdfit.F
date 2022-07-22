@@ -23,7 +23,7 @@ c
       double precision CD_coef(nbf_cd,3*nfit)
       double precision force(3,nat)
       double precision tol2e
-      logical oskel, adft
+      logical oskel, adft, doit
 c
       call dftg_cdfit_gen(geom, AO_bas_han, CD_bas_han,
      &                    nbf_cd, nat, tol2e, scr, 
@@ -116,7 +116,7 @@ c
       integer nbf_ao_mxnbf_ce
       double precision PPP_max,dE,fac,schwarz_shell,q1
       double precision offset,cd_max,cd_maxshell
-      logical do_force, do_cpks_r, do_hess
+      logical do_force, do_cpks_r, do_hess, doit
       integer ierr,LU
       integer k_at,l_at,atom_p_in,atom_q_in,nat_used
       integer ifit,lencd
@@ -124,8 +124,10 @@ c
 c
       character*(nw_max_path_len) cdfit
 c
+      double precision time0
       double precision gradient
       double precision dabsmax
+      double precision screen
       external nxtask,schwarz_shell,dabsmax
       double precision ddot
       external ddot
@@ -329,11 +331,12 @@ c              Schwarz screening on product MAX(ABS(DM(i,j)))*schwarz(i,j)
 c
                PPP_max = dabsmax(nao2,PPP)
                if (adft .and. nfit.gt.1) then
-                 PPP_max = PPP_max + dabsmax(nao2,PPP(nao2+1))
+                 PPP_max = max(PPP_max,dabsmax(nao2,PPP(nao2+1)))
                endif
 
-
-               if (PPP_max*schwarz_shell(ishp,ishq)*cd_max.gt.tol2e)then
+               screen = tol2e/PPP_max/schwarz_shell(ishp,ishq)
+               if (cd_max.gt.screen)then
+                 
                   do ishd = 1, nshells_cd
                      if (.not. bas_cn2bfr(CD_bas_han, ishd, 
      &                  ifirstd, ilastd))
@@ -341,6 +344,14 @@ c
      &       BASIS_ERR)
                      nshbfd = ilastd - ifirstd + 1
                      Nintegrals = nshbfp*nshbfq*nshbfd
+                     doit = dabsmax(nshbfd,cd_coef(ifirstd,2*nfit+1))
+     &                      .gt.screen
+                     if (adft.and.(nfit.gt.1)) then
+                       doit = doit .and.
+     &                 dabsmax(nshbfd,cd_coef(ifirstd,3*nfit)).gt.screen
+                     endif
+
+                     if (.not.doit) cycle
 c
 c                    check for use of symmetry
 c
@@ -381,35 +392,28 @@ c
                      do iat = 1, 4
 c
                         if (idatom(iat).gt.0)then
-c
-                           do icart = 1, 3
-c
-                              call dgemv('N', Nao2, nshbfd, 1.D0, 
-     &                                   buf(icount), Nao2,
-     &                                   CD_coef(ifirstd,2*nfit+1), 1, 
-     &                                   0.D0, vec, 1)
-c
-                              dE = ddot(nshbfq*nshbfp, PPP, 
-     &                                          1, vec, 1)
-c
-                              if (adft .and. nfit.eq.2) then
-                                call dgemv('N', Nao2, nshbfd, 1.D0, 
-     &                                   buf(icount), Nao2,
-     &                                   CD_coef(ifirstd,3*nfit), 1, 
-     &                                   0.D0, vec, 1)
-c
-                                dE = dE + ddot(nao2, PPP(nao2+1), 
-     &                                    1, vec, 1)
-                              endif
-
-                              icount = icount + Nintegrals
-                              force(icart,idatom(iat)) = 
-     &                        force(icart,idatom(iat)) + dE * fac * q1
-c
+                           call dgemv('t',nao2,3*nshbfd,1d0,
+     &                       buf(icount),nao2,ppp,1,0d0,vec,1)
+                           do icart=1,3
+                             dE = dot_product(vec((icart-1)*nshbfd+1:
+     &                                        icart*nshbfd),
+     &                            cd_coef(ifirstd:ilastd,2*nfit+1))
+                             force(icart,idatom(iat)) = 
+     &                       force(icart,idatom(iat)) + dE * fac * q1
                            enddo
-                        else
-                           icount = icount + 3*Nintegrals
-                        endif
+                           if (adft.and.(nfit.eq.2)) then
+                             call dgemv('t',nao2,3*nshbfd,1d0,
+     &                         buf(icount),nao2,ppp(nao2+1),1,0d0,vec,1)
+                             do icart=1,3
+                               dE = dot_product(vec((icart-1)*nshbfd+1:
+     &                                        icart*nshbfd),
+     &                            cd_coef(ifirstd:ilastd,2*nfit+1))
+                               force(icart,idatom(iat)) = 
+     &                         force(icart,idatom(iat)) + dE * fac * q1
+                             enddo
+                           endif
+                         endif
+                         icount = icount + 3*Nintegrals
                      enddo
 c
                      else if (do_hess) then
