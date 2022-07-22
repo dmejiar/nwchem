@@ -9,6 +9,7 @@ check_tgz() {
 
 VERSION=0.2.7-ilp64-alpha
 TGZ=tblite-${VERSION}.tar.gz
+COMMIT=f54684299ae7144fdc704ae7df99aa51dbd73fa7
 if [ ! -z "${USE_INTERNALBLAS}" ]; then
     echo USE_TBLITE not compatible with USE_INTERNALBLAS
     echo Please set BUILD_OPENBLAS or
@@ -19,12 +20,15 @@ if [ `check_tgz $TGZ` == 1 ]; then
     echo "using existing $TGZ"
 else
     rm -rf tblite*
-    curl -L https://github.com/dmejiar/tblite/archive/v${VERSION}.tar.gz -o $TGZ
+    #curl -L https://github.com/dmejiar/tblite/archive/v${VERSION}.tar.gz -o $TGZ
+    curl -L https://github.com/dmejiar/tblite/archive/${COMMIT}.zip -o tblite-${COMMIT}.zip
 fi
 
-tar -xzf tblite-${VERSION}.tar.gz
-ln -sf tblite-${VERSION} tblite
+#tar -xzf tblite-${VERSION}.tar.gz
+#ln -sf tblite-${VERSION} tblite
 
+unzip -n -q tblite-$COMMIT.zip
+ln -sf tblite-$COMMIT tblite
 
 if [[  -z "${CC}" ]]; then
     CC=cc
@@ -123,8 +127,8 @@ fi
 cd tblite
 rm -rf _build
 
-FC=$FC CC=$CC $CMAKE -B _build -DLAPACK_LIBRARIES="$BLASOPT" -DWITH_ILP64=$ilp64 -DWITH_OpenMP=$DOOPENMP -DCMAKE_INSTALL_PREFIX="../.." -DWITH_TESTS=OFF -DWITH_API=OFF -DCMAKE_INSTALL_LIBDIR="lib" -DCMAKE_IGNORE_PATH=/usr/local -DCMAKE_Fortran_FLAGS="$FFLAGS" -DWITH_API=OFF -DWITH_TESTS=OFF -DWITH_APP=OFF
-$CMAKE --build _build --parallel 4
+FC=$FC CC=$CC $CMAKE -B _build -DLAPACK_LIBRARIES="$BLASOPT" -DBLAS_LIBRARIES="$BLASOPT" -DWITH_ILP64=$ilp64 -DWITH_OpenMP=$DOOPENMP -DCMAKE_INSTALL_PREFIX="../.." -DWITH_TESTS=OFF -DWITH_API=OFF -DCMAKE_INSTALL_LIBDIR="lib" -DCMAKE_IGNORE_PATH=/usr/local -DCMAKE_Fortran_FLAGS="$FFLAGS" -DWITH_API=OFF -DWITH_TESTS=OFF -DWITH_APP=OFF
+$CMAKE --build _build --parallel 12
 status=$?
 if [ $status -ne 0 ]; then
     echo tblite compilation failed
