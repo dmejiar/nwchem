@@ -16,6 +16,7 @@ c
 #include "eaf.fh"
 #include "cdft.fh"
 #include "sym.fh"
+#include "inp.fh"
 c
       integer nmat           ! number of J matrices to make [input]
       integer g_vc(nmat)     ! GA handle for V Coulomb [output]
@@ -23,8 +24,11 @@ c
       integer n_bmax         ! max no. batches
       integer iwhat(n_bmax)  ! what batches have been computed [out]
       integer n3c_dbl
+      integer LU,ierr
+      character*(nw_max_path_len) cdfit_filename
+      character*255 errmsg
 c
-      double precision CD_coef(nbf_cd,nmat)
+      double precision CD_coef(nbf_cd,2*nmat)
       double precision i3c_ERI(n3c_dbl)
       double precision Ecoul2 ! [output]
 c
@@ -59,12 +63,10 @@ c
       external nxtask
       double precision ddot
       external ddot
+      double precision offset
 c
       if(dermat) call errquit(
      C     'fitvc: dermat not coded yet',0,0)
-      if (.not.dermat .and. nmat.ne.1) then
-         call errquit('nmat must be 1 for regular fit in dft_fitvc',0,0)
-      endif
 
       oprint_ioinfo = util_print('io info',print_debug)
 c
@@ -141,7 +143,9 @@ c
 c
       if (.not.do_init) call errquit(
      C     ' dft_fitvc: do_init has to be true',0,0)
-      call ga_zero(g_vc)
+      do imat=1,nmat
+        call ga_zero(g_vc(imat))
+      enddo
       if(.not.MA_Push_Get(MT_int,ncenters,'at list',l_at,k_at))
      &  call errquit('dft_fitvc: cannot allocate at list',0, MA_ERR)
 c     sort atoms list based on decreasing atomic weight
@@ -179,7 +183,7 @@ c
      &              call errquit('Exiting in dft_fitcd',110, BASIS_ERR)
                icount_c=0
 czero k_p
-               call dcopy(nbf_at_d*nbf_at_c,0d0,0,dbl_mb(k_p),1)
+               call dcopy(nmat*nbf_at_d*nbf_at_c,0d0,0,dbl_mb(k_p),1)
                do ishc=sh_lo_c,sh_hi_c
 
                   if( .not. bas_cn2bfr( AO_bas_han,ishc,ifirstc,ilastc))
@@ -320,8 +324,11 @@ c
      &     call errquit('dft_fitvc: cannot pop stack',0,0)
       if(use_nxtask) n1 = nxtask(-nproc,1)
       call ga_mask_sync(.not.use_nxtask,.false.)
-      call ga_symmetrize(g_vc)
-      if(oprint_ioinfo) call ga_print(g_vc)
+
+      do imat=1,nmat
+        call ga_symmetrize(g_vc(imat))
+        if(oprint_ioinfo) call ga_print(g_vc(imat))
+      enddo
 c      
 c
 c     Compute the Coulombic self-energy of the fitted charge density.
@@ -368,6 +375,43 @@ c         write(*,*)'*** After destroy g_2ceri'
          if (.not. ga_destroy(g_2ceri)) call errquit
      &   ('dft_fitvc: could not destroy g_2ceri', 0,0)
       endif         
+c
+      if (adft) then
+      if(me.eq.0) then
+         call util_file_name('cdfit', .true., .false.,
+     &         cdfit_filename)
+         LU=79
+         ierr=eaf_open(cdfit_filename(1:inp_strlen(cdfit_filename)),
+     ,        eaf_rw, LU)
+        if (ierr .ne. 0) then
+           call eaf_errmsg(ierr,errmsg)
+           write(LuOut,*) ga_nodeid(),errmsg
+           call errquit('dft_fitcd: eaf_open failed', ierr, GA_ERR)
+        endif
+         do imat = nmat+1, 2*nmat
+            offset=(imat-1)*8d0*nbf_cd
+            ierr = eaf_write(LU, offset, cd_coef(1,imat),
+     .           8*nbf_cd)
+            if (ierr .ne. 0) then
+               call eaf_errmsg(ierr, errmsg)
+               write(LuOut,*) ' IO offset ', offset
+               write(LuOut,*) ' IO error message ',
+     $              errmsg(1:inp_strlen(errmsg))
+               call errquit('dft_fitcd: write failed',imat, INPUT_ERR)
+               endif
+         enddo
+         ierr=eaf_close(LU)
+         if (ierr .ne. 0) then
+            write(luout,*) ga_nodeid(),' closing FD =',LU,
+     ,           cdfit_filename(1:inp_strlen(cdfit_filename)) 
+            call eaf_errmsg(ierr, errmsg)
+            write(LuOut,*) ' IO error message ',
+     $           errmsg(1:inp_strlen(errmsg))
+            call util_flush(luout)
+            call errquit('dft_fitcd: eaf_close failed',0, DISK_ERR)
+         endif
+      endif
+      endif
 c
       return
       end

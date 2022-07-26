@@ -80,7 +80,7 @@ c
                               !<   correlation 
                               !< - nExc=2: Exc(1) = exchange,
                               !<           Exc(2) = correlation 
-      double precision cd_coef(nbf_cd,2*ipol)
+      double precision cd_coef(nbf_cd,*)
 c
 c This driver routine solves for the XC energy and potential (Vxc) via 
 c numerical quadrature methods. The results are obtained either by direct 
@@ -219,6 +219,7 @@ c
      &                   dbl_mb(iTmat),1)
             endif
 
+
             call xc_fitv(rtdb,Dbl_MB(iTmat), nTrows, nTcols,
      &           g_vxc, g_xcinv, IOLGC)  
 
@@ -235,6 +236,9 @@ c
             if (.not.ma_pop_stack(lTmat))
      &             call errquit('xc_getv: cannot pop stack',0, MA_ERR)
 c     
+         elseif (CDFIT .and. (ipol.gt.1)) then
+            call daxpy(nbf_cd,1.0d0,cd_coef(1,2),1,cd_coef(1,1),1)
+            call dcopy(nbf_cd,cd_coef(1,1),1,cd_coef(1,2),1)
          endif
       endif
 c
