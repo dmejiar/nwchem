@@ -73,6 +73,8 @@ c
       double precision Efrozemb  ! energy
 
       integer g_cosmo
+
+      logical no2e
 c
 c     timings
 c
@@ -148,6 +150,15 @@ c     =========================================================================
 
       me=ga_nodeid()
       if (odftps) call pstat_on(ps_fockb)
+
+c ... jochen: to run tests on one-electron systems, we
+c     simply disable all two-electron contributions if
+c     requested by an input switch
+      if(.not.rtdb_get(rtdb,'dft:no2e',MT_LOG,1,no2e))
+     &   no2e = .false.
+      if (no2e.and.me.eq.0) write (luout,*)
+     &   'WARNING: dft:no2e set. Disabling Coulomb and XC Fock terms'
+
 
 c
       Ecoul  = 0d0

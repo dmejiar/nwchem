@@ -112,7 +112,7 @@ c     preliminaries
         v_nh(nnhos) = v_nh(nnhos) + g_nh(nnhos)*dt4*syw_nh(isy)/3
       enddo
       enddo
-      
+
       do i=1,n
         v(1:3,i) = scalefac*v(1:3,i)
       enddo

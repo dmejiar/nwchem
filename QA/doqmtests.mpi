@@ -202,6 +202,7 @@ echo "qmmm frequency  test  may  fail"
 ./runtests.mpi.unix procs $np ch3radical_unrot
 ./runtests.mpi.unix procs $np cho_bp_props
 ./runtests.mpi.unix procs $np prop_cg_nh3_b3lyp
+./runtests.mpi.unix procs $np localize-ibo-aa
 #
 #--- range-separated functionals tests
 ./runtests.mpi.unix procs $np acr-camb3lyp-cdfit
@@ -330,6 +331,9 @@ np_small=$(get_limit $np 16)
 ./runtests.mpi.unix procs $np gw_openshell
 # x2c
 ./runtests.mpi.unix procs $np x2c-h2se
+./runtests.mpi.unix procs $np hgh-hfc-x2c-gnuc
+./runtests.mpi.unix procs $np hgh-hfc-x2c-pnuc
+./runtests.mpi.unix procs $np hg-1e-hfc-x2c
 #--- if we only want quick tests get out now!
 if [[ "$what" == "fast" ]]; then
   exit

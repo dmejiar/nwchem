@@ -219,7 +219,7 @@ c       Nose-Hoover: get masses
      &        call errquit(pname//'failed to write nnhos',0,RTDB_ERR)
             goto 200
           elseif(inp_compare(.false.,'frequency',test)) then
-            if (.not.inp_f(nh_freq)) 
+            if (.not.inp_f(nh_freq))
      &      call errquit(pname//'failed to read frequency',0,INPUT_ERR)
             if (.not.rtdb_put(rtdb,'qmd:nhfreq',mt_dbl,1,nh_freq))
      &        call errquit(pname//'failed to write nhfreq',0,RTDB_ERR)

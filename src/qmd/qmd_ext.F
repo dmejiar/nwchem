@@ -6,9 +6,9 @@
 #include "util_params.fh"
 #include "stdio.fh"
 #include "qmd_ext.fh"
-      integer nat             ![in]
-      double precision dt_nucl![in]
-      double precision kbt    ![in]
+      integer nat              ![in]
+      double precision dt_nucl ![in]
+      double precision kbt     ![in]
       character*(*) ext_forces
       logical input_exists
 c     pass plumed initialization bits

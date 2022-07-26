@@ -18,7 +18,6 @@
 #ifdef USE_OPENMP
       use omp_lib, only : omp_get_max_threads
 #endif
-      implicit none
 #include "rtdb.fh"
 #include "geom.fh"
 #include "mafdecls.fh"
@@ -45,8 +44,8 @@
       character(len=8) theory
       character(len=255) temp
 
-      integer :: iuhf4, nspin4, verb4
-      integer,allocatable :: atnum4(:)
+      INTGR4 :: iuhf4, nspin4, verb4
+      INTGR4 ,allocatable :: atnum4(:)
 
       double precision energy
       double precision, allocatable :: coords(:,:)
@@ -182,7 +181,7 @@
       allocate(ctx)
       allocate(param)
 
-      oldmode = rtdb_parallel(.false.)
+      oldmode =  rtdb_parallel(.false.)
       if (ga_nodeid().eq.0) then
         !
         ! Pass geometry info and create mol object
@@ -242,7 +241,7 @@
 
 
         !
-        ! Actually do the sinlgepoint calculations
+        ! Actually do the singlepoint calculations
         !
         call xtb_singlepoint(ctx,mol,calc,wfn,acc,energy,
      $                       verbosity=verb4)
@@ -282,7 +281,11 @@
         status = rtdb_put(rtdb,'xtb:restart',mt_log,1,.true.)
         xtb_energy = .not.ctx%failed()
       endif
+<<<<<<< HEAD
       oldmode = rtdb_parallel(oldmode)
+=======
+      oldmode =  rtdb_parallel(oldmode)
+>>>>>>> master
 
       !
       ! Check if something failed during the calculation
