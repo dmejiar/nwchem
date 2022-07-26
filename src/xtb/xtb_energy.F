@@ -281,11 +281,7 @@
         status = rtdb_put(rtdb,'xtb:restart',mt_log,1,.true.)
         xtb_energy = .not.ctx%failed()
       endif
-<<<<<<< HEAD
-      oldmode = rtdb_parallel(oldmode)
-=======
       oldmode =  rtdb_parallel(oldmode)
->>>>>>> master
 
       !
       ! Check if something failed during the calculation
