@@ -154,6 +154,9 @@ c
       logical task_gwmol
       external task_gwmol
 
+      logical task_bsemol
+      external task_bsemol
+
 c      logical embed_optimize
 c      external embed_optimize
 c
@@ -453,6 +456,8 @@ c         status=embed_prepare(rtdb)
          status=task_dntmc(rtdb)
       else if (inp_compare(.false., 'gw', operation)) then
          status = task_gwmol(rtdb)
+      else if (inp_compare(.false., 'bse', operation)) then
+         status = task_bsemol(rtdb)
 c
 c     **** check for theories that have specific operations ****
 c
