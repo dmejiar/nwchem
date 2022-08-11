@@ -37,7 +37,7 @@ c
 c     task [qmmm] <string theory> [<string operation = energy>] [numerical || analytic] 
 c          [ignore]
 c
-      logical numerical, ignore, oqmmm, analytic
+      logical numerical, ignore, oqmmm, analytic, gwbse
       logical orism
       logical omm
       logical opes
@@ -59,6 +59,7 @@ c
       opes      = .false.
       ofragment = .false.
       osmd      = .false.
+      gwbse     = .false.
 c      oembed    = .false.
 c
       call rtdb_clean(rtdb, 'task:') ! Delete ALL previous task parameters
@@ -104,6 +105,10 @@ c
             operation = 'rt_tddft'
          else if (inp_compare(.false.,test,'gw')) then
             operation = 'gw'
+            gwbse = .true.
+         else if (inp_compare(.false.,test,'bse')) then
+            operation = 'bse'
+            gwbse = .true.
          else if (inp_compare(.false.,test,'fcidump')) then
             operation = 'fcidump'
 c         else if (inp_compare(.false.,test,'prepare')) then
@@ -367,6 +372,7 @@ c
 c
       if (theory .eq. ' ') then
         if(osmd) theory="smd"
+        if(gwbse) theory='dft'
       end if        
       if (theory .ne. ' ') then
          if (.not. rtdb_cput(rtdb, 'task:theory', 1, theory))
