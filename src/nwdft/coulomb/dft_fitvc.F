@@ -75,6 +75,9 @@ c
 c      
       me=ga_nodeid()
       nproc  = ga_nnodes()
+      do imat=1,nmat
+        call ga_zero(g_vc(imat))
+      enddo
 c      
 c     Compute the fitted Vcoul.
 c      
@@ -341,6 +344,9 @@ c
 c     Obtain the matrix of 2-ctr ERIs.
 c      
 c
+      ! For ADFT, the cd_coef fields had CD_up + CD_dw + XC_up
+      ! so we need to remove the XC part in order to compute
+      ! Ecoul2
       if (ADFT) then
         call daxpy(nbf_cd,-1d0,cd_coef(1,nmat+1),1,cd_coef,1)
         if (ipol.gt.1) then
@@ -377,6 +383,9 @@ c         write(*,*)'*** After destroy g_2ceri'
      &   ('dft_fitvc: could not destroy g_2ceri', 0,0)
       endif         
 c
+      ! For ADFT we need to save CD_up, CD_dw, XC_up, and XC_dw
+      ! CD_up and CD_dw were already saved, so here we only add
+      ! XC_up and XC_dw to the file
       if (adft) then
       if(me.eq.0) then
          call util_file_name('cdfit', .true., .false.,

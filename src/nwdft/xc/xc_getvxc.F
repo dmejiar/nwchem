@@ -80,7 +80,10 @@ c
                               !<   correlation 
                               !< - nExc=2: Exc(1) = exchange,
                               !<           Exc(2) = correlation 
-      double precision cd_coef(nbf_cd,*)
+      double precision cd_coef(nbf_cd,*) !< CD fitting coefficients plus
+                                         !< Additional space for XC
+                                         !< fitting coefficients in ADFT
+                                         
 c
 c This driver routine solves for the XC energy and potential (Vxc) via 
 c numerical quadrature methods. The results are obtained either by direct 
@@ -142,12 +145,21 @@ c     Get the DFT exchange-correlation contribution
       if(oprint_time) 
      &      time1_xc=util_cpusec()   ! start xc build time
       if (xc_gotxc()) then  
+
+         ! XCFIT will be true for ADFT as well
          if(xcfit) then       
             nTrows = nbf_xc
             nTcols = ipol
+
+            ! Allocated memory twice as large to hold both
+            ! CD and XC coefs for an eventual ADFT calculation
             if (.not.ma_push_get(MT_Dbl,nTrows*nTcols*2,'Tmat',lTmat,
      &           iTmat))call errquit('xc_getv: cannot allocate Tmat',0,
      &       MA_ERR)
+
+            ! ADFT needs the CD coefs to generate the fitted density
+            ! on the grid, and will use the rest of the memory to
+            ! store the XC coefs
             if (ADFT) then
               call dcopy(nTrows*nTcols,cd_coef,1,dbl_mb(iTmat),1)
               call dfill(nTrows*nTcols,0.D0,
@@ -201,19 +213,32 @@ c        print fock_xc build time
          end if
 c
 c        In case we are performing an xc fit calculation
+c        including the ADFT flavor
          if(xcfit) then
 c     
 c     symmetrize the "T" vector
-c     
+c    
             if (oskel)then
-               call sym_vec_symmetrize(
-     .              geom,xc_bas_han,Dbl_MB(iTmat))
-               if (ipol.gt.1)then
-                  call sym_vec_symmetrize(geom, xc_bas_han, 
-     &                    Dbl_MB(iTmat+nbf_xc))
+               if (adft) then
+                 call sym_vec_symmetrize(
+     .                geom,xc_bas_han,Dbl_MB(iTmat+nbf_xc*ipol))
+                 if (ipol.gt.1)then
+                    call sym_vec_symmetrize(geom, xc_bas_han, 
+     &                      Dbl_MB(iTmat+nbf_xc*ipol+nbf_xc))
+                 endif
+               else
+                 call sym_vec_symmetrize(
+     .                geom,xc_bas_han,Dbl_MB(iTmat))
+                 if (ipol.gt.1)then
+                    call sym_vec_symmetrize(geom, xc_bas_han, 
+     &                      Dbl_MB(iTmat+nbf_xc))
+                 endif
                endif
             endif
 
+            ! ADFT had the XC coefs at the end, we need to copy them
+            ! to the beginning for xc_fitv (or change xc_fitv to operate
+            ! on the last nTrows*nTcols)
             if (ADFT) then
               call dcopy(nTrows*nTcols,dbl_mb(itmat+nTrows*nTcols),1,
      &                   dbl_mb(iTmat),1)
@@ -224,8 +249,13 @@ c
      &           g_vxc, g_xcinv, IOLGC)  
 
             if (ADFT) then
+              ! Save XC coeficients for a potential gradient evaluation
               call dcopy(ipol*nbf_cd,dbl_mb(iTmat),1,
      $                   cd_coef(1,ipol+1),1)
+
+              ! In order to build the right Fock matrices in dft_fitvc
+              ! we need cd_coef_up + cd_coef_dw + xc_coef_up and
+              !         cd_coef_up + cd_coef_dw + xc_coef_dw
               if (ipol.gt.1) then
                 call daxpy(nbf_cd,1.0d0,cd_coef(1,2),1,cd_coef(1,1),1)
                 call dcopy(nbf_cd,cd_coef(1,1),1,cd_coef(1,2),1)
@@ -236,10 +266,14 @@ c
             if (.not.ma_pop_stack(lTmat))
      &             call errquit('xc_getv: cannot pop stack',0, MA_ERR)
 c     
-         elseif (CDFIT .and. (ipol.gt.1)) then
-            call daxpy(nbf_cd,1.0d0,cd_coef(1,2),1,cd_coef(1,1),1)
-            call dcopy(nbf_cd,cd_coef(1,1),1,cd_coef(1,2),1)
          endif
+      endif
+      ! Standard cd fitting needs the coefficients for the full
+      ! density in each spin channel to get the right Fock
+      ! matrices
+      if ((.not.adft).and.CDFIT .and. (ipol.gt.1)) then
+         call daxpy(nbf_cd,1.0d0,cd_coef(1,2),1,cd_coef(1,1),1)
+         call dcopy(nbf_cd,cd_coef(1,1),1,cd_coef(1,2),1)
       endif
 c
       if (oprint_intermediate_xc)then
