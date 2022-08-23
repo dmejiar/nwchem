@@ -128,18 +128,10 @@ c the dVxc*P contribution in TDDFT gradients.
 c
 c     
       if (adft) then
-<<<<<<< HEAD
-        basis = xc_bas_han
-      else
-        basis = cd_bas_han
-      endif
-
-=======
         basis = cd_bas_han
       else
         basis = ao_bas_han
       endif
->>>>>>> master
       me = ga_nodeid()
       Ec = 0.d0
       Ex = 0.d0
@@ -211,11 +203,7 @@ c
       
 c Daniel (1-11-13): Added XC-third derivative stuff to prevent problems
 c with subroutine calls after this one.
-<<<<<<< HEAD
-      write(*,*) cd_coef(1:nbf_cd)
-=======
 cdebug      write(*,*) 'cd_coef', cd_coef(1:nbf_cd)
->>>>>>> master
 
       call grid_loop(.true.,
      ,     nops,
