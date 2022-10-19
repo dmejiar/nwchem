@@ -65,6 +65,8 @@ c     Surface Hopping
       integer l_en_p, k_en_p             ! energies, previous step
       integer l_so, k_so                 ! index of occupied orbitals for swaps
       integer l_sv, k_sv                 ! index of virtual orbitals for swaps
+      integer l_q, k_q
+      integer l_rcov, k_rcov
       integer nstates                    ! number of states
       integer state                      ! current state
       integer state_p                    ! previous state
@@ -74,6 +76,7 @@ c     Surface Hopping
       integer nmo(2)                     ! number of MOs
       integer ks_spin                    ! 1=alpha, 2=beta
       integer ispin
+      integer fragstep
       double precision dt_elec           ! electronic time step
       double precision kbt               ! k_b*T in au (for plumed)
       logical do_namd                    ! NAMD flag
@@ -83,6 +86,7 @@ c     Surface Hopping
       logical do_tdks                    ! TDKS flag
       logical tda                        ! TDA flag
       logical deco                       ! decoherence flag
+      logical do_frag, fragment, stopnow
 c
       logical status_qmd
       logical status_property
@@ -127,6 +131,9 @@ c     preliminaries
       dipole(1) = 0.d0
       dipole(2) = 0.d0
       dipole(3) = 0.d0
+      fragment = .false.
+      stopnow = .false.
+      fragstep = 0
 c
 c     check if we need cavity constraints
       if(.not.rtdb_get(rtdb,'qmd:cavity',mt_log,1,do_cavity))
@@ -145,6 +152,10 @@ c
      E       ext_forces='none'
       if(ga_nodeid().eq.0) write(6,*) ' Ext forces = ',
      E     ext_forces(1:inp_strlen(ext_forces))
+c
+c     check for fragmentation flag
+      if (.not.rtdb_get(rtdb,'qmd:frag',mt_log,1,do_frag))
+     &  do_frag = .false.
 c
 c     get xyzfileunit
       if(.not.util_get_io_unit(xyzfileunit))
@@ -202,6 +213,14 @@ c
      $   call errquit(pname//'ma_push_get grads',3*nat,MA_ERR)
       call dfill(3*nat, 0.0d0, dbl_mb(k_g), 1)
 c
+      if(.not.ma_push_get(mt_dbl,50*nat,'charges',l_q,k_q)) ! charges
+     $   call errquit(pname//'ma_push_get charges',50*nat,MA_ERR)
+      call dfill(50*nat, 0.0d0, dbl_mb(k_q), 1)
+
+      if(.not.ma_push_get(mt_dbl,nat,'rcov',l_rcov,k_rcov)) ! charges
+     $   call errquit(pname//'ma_push_get rcov',nat,MA_ERR)
+      call dfill(nat, 0.0d0, dbl_mb(k_rcov), 1)
+c
 c     get the active atoms (also need a check for linearity)
 c     need to implement constraints
       if (.not. ma_push_get(mt_log,nat,'active atoms',l_act,k_act)) ! active
@@ -229,6 +248,9 @@ c
 c     get the masses
       if (.not.geom_masses_get(geom,nat,dbl_mb(k_m)))  ! masses
      $   call errquit(pname//'geom_masses_get',geom,GEOM_ERR)
+c
+c     get covalent radii
+      if (do_frag) call qmd_covrad(nat, geom, dbl_mb(k_rcov))
 c
 c     Are we doing surface hopping?
 c      ***Surface hopping only works for DFT/TDDFT currently***
@@ -445,8 +467,17 @@ c          for input and output, state runs from 0 to nstates-1
          write(luout,*)
          write(luout,*)
 c
+c        compute average partial atomic charge
+         if (do_frag) 
+     &     call qmd_charge(nat,istep_nucl-sstep_nucl+1,dbl_mb(k_q))
+c
+c        check for fragmentation
+         if (do_frag)
+     &     call qmd_fragment(nat,dbl_mb(k_r),dbl_mb(k_rcov),fragment,
+     &                      fragstep,stopnow,dt_nucl*cau2fs)
+c
 c        check how often to write out the tracjectory
-         if (mod(istep_nucl,print_xyz).eq.0) then
+         if ((mod(istep_nucl,print_xyz).eq.0).or.stopnow) then
 c
 c          write trajectory
            call qmd_write_trj(xyzfilename,xyzfileunit,.true.,nat,
@@ -487,6 +518,11 @@ c
 c       restart file has been written so set restart flag in RTDB
         if (.not.rtdb_put(rtdb,'qmd:restart',mt_log,1,.true.))
      &    call errquit(pname//'failed to write restart',0,RTDB_ERR)
+c
+        if (do_frag)
+     &    call ga_brdcst(mt_log,stopnow,8,0)
+
+        if (stopnow) exit
 c
       end do  ! istep_nucl
   110 format(A20,I20)

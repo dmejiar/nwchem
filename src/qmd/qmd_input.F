@@ -45,6 +45,7 @@ c
       logical do_property
       logical do_tddft
       logical do_freq
+      logical do_frag
       double precision cavity_axis(3)
       double precision cavity_spring
      
@@ -156,6 +157,11 @@ c     Calculate frequencies every step_freq steps
       if (.not.rtdb_put(rtdb,'qmd:step_freq',mt_int,
      &  1,step_freq))
      & call errquit(pname//'failed to write step_freq',0,RTDB_ERR)
+c
+c     Are we doing fragmentation?
+      do_frag=.false.
+      if (.not.rtdb_put(rtdb,'qmd:frag',mt_log,1,do_frag))
+     & call errquit(pname//'failed to write do_frag',0,RTDB_ERR)
 c
 c     ----------
 c     Read input
@@ -360,6 +366,12 @@ c
 c     Print
       else if (inp_compare(.false.,test,'print')) then
         call util_print_input(rtdb,'qmd')
+c
+c     Fragmentation
+      else if (inp_compare(.false.,test,'frag')) then
+        do_frag=.true.
+        if (.not.rtdb_put(rtdb,'qmd:frag',mt_log,1,do_frag))
+     &    call errquit(pname//'failed to write frag',0,RTDB_ERR)
 c
 c     END
       else if (inp_compare(.false.,test,'end')) then

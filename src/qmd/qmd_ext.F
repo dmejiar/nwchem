@@ -1,4 +1,5 @@
-      subroutine qmd_ext_init(nat,dt_nucl,kbt,ext_forces)
+      subroutine qmd_ext_init(nat,dt_nucl,kbt,ext_forces,istep)
+      use iso_c_binding, only: c_int
       implicit none
 #include "mafdecls.fh"
 #include "global.fh"
@@ -7,6 +8,7 @@
 #include "stdio.fh"
 #include "qmd_ext.fh"
       integer nat              ![in]
+      integer istep
       double precision dt_nucl ![in]
       double precision kbt     ![in]
       character*(*) ext_forces
@@ -14,15 +16,15 @@
 c     pass plumed initialization bits
 #ifdef USE_PLUMED
       integer ga_comm
-      integer*4 ga_comm4
-      integer*4 nat4
+      integer(c_int) ga_comm4
+      integer(c_int) nat4
       if(ext_forces(1:inp_strlen(ext_forces)).ne.'plumed') call
      E     errquit(' qmd_ext works only with plumed ',0,0)
       call ga_mpi_comm_pgroup_default(ga_comm)
       if(ga_nodeid().eq.0) then
       call plumed_f_gcreate()
       call plumed_f_gcmd("setRealPrecision"//char(0),
-     c     MA_sizeof(MT_DBL,1,MT_BYTE))
+     c     int(MA_sizeof(MT_DBL,1,MT_BYTE),kind=c_int))
 c we have no barostat/virial in qmd      
       call plumed_f_gcmd("setNoVirial"//char(0),0)
 c conversion factor between the energy unit used in nwchem and kJ mol-1      
@@ -30,7 +32,7 @@ c conversion factor between the energy unit used in nwchem and kJ mol-1
 c conversion factor between the length unit used in nwchem and nm      
       call plumed_f_gcmd("setMDLengthUnits"//char(0),cau2nm)
 c conversion factor between the time unit used in nwchem and ps      
-      call plumed_f_gcmd("setMDTimeUnits"//char(0),cau2fs/1000)
+      call plumed_f_gcmd("setMDTimeUnits"//char(0),cau2fs/1000.0d0)
 c     kBT
       call plumed_f_gcmd("setKbT"//char(0),kbt)
 
@@ -65,7 +67,7 @@ c     get output file name
      E     extfrc_output(1:inp_strlen(extfrc_output))//char(0))
       nat4=nat
       call plumed_f_gcmd("setNatoms"//char(0),nat4)
-      call plumed_f_gcmd("setMDEngine"//char(0),"nwchem")
+      call plumed_f_gcmd("setMDEngine"//char(0),"nwchem"//char(0))
 #ifdef PLUMED_HASMPI 
       call plumed_f_gcmd("setMPIFComm"//char(0),ga_comm4)
 #endif
@@ -86,6 +88,7 @@ c     get output file name
 
       subroutine qmd_ext_gradient(nat,istep_nucl,energy,m,g,r,
      E     ext_forces)
+      use iso_c_binding, only: c_int
       implicit none
 #include "global.fh"      
 #include "mafdecls.fh"
@@ -100,22 +103,24 @@ c     get output file name
       character*(*) ext_forces
 #ifdef USE_PLUMED
       integer i
+      integer(c_int) localstep
+      localstep = istep_nucl - sstep + 1
 c     call plumed: r[in], g[out]
 c     pointer to current timestep
       if(ext_forces(1:inp_strlen(ext_forces)).ne.'plumed') call
      E     errquit(' qmd_ext works only with plumed ',0,0)
       if(ga_nodeid().eq.0) then
-      call plumed_f_gcmd("setStep"//char(0),istep_nucl)
+      call plumed_f_gcmd("setStep"//char(0),localstep)
       call plumed_f_gcmd("setMasses"//char(0),m)
 c plumed uses forces not gradientes. double flip
 c first flip
         call dscal(3*nat, -1d0, g, 1)
-       if(ga_nodeid().eq.0) then
-          write(luout,*) '### forces before plumed ##'
-          do i=1,nat
-             write(luout,1) i,g(1,i),g(2,i),g(3,i)
-          enddo
-       endif
+c       if(ga_nodeid().eq.0) then
+c          write(luout,*) '### forces before plumed ##'
+c          do i=1,nat
+c             write(luout,1) i,g(1,i),g(2,i),g(3,i)
+c          enddo
+c       endif
       call plumed_f_gcmd("setForces"//char(0),g)
       call plumed_f_gcmd("setPositions"//char(0),r)
 

@@ -198,7 +198,7 @@ c
       end
 
 
-      subroutine lowd_pop( geom, basis, iga_dens,iga_s, g_tmp )
+      subroutine lowd_pop( geom, basis, iga_dens, iga_s, g_tmp, frag )
 
 C$Id$
       Implicit none
@@ -208,7 +208,7 @@ C$Id$
       integer iga_dens           ! dens. mat GA handle
       integer iga_ps             ! product   GA handle
       integer g_tmp             
-
+     
       integer natoms,nshells
       integer lPSmat,iPSmat,lqatom,iqatom,lqshell,iqshell
       integer iatom,ilo,ihi,nbf,max_at_bf2
@@ -216,6 +216,7 @@ c
       integer  ga_create_atom_blocked
       external ga_create_atom_blocked
       logical status
+      logical frag
 
 #include "bas.fh"
 #include "geom.fh"
@@ -261,6 +262,15 @@ c
      &     dbl_mb(iqatom),dbl_mb(iqshell),dbl_mb(iPSmat), 'total')
       
       call ga_sync
+
+      if (ga_nodeid().eq.0 .and. frag) then
+        open(unit=66,status='unknown',form='formatted',
+     $       file='charge',position='rewind')
+        do iatom=0,natoms-1
+          write(66,*) dbl_mb(iqatom+iatom)
+        enddo
+        close(unit=66,status='keep')
+      endif
 
       if(.not.MA_Pop_Stack(lqshell))
      &     call errquit(' exiting in mull_pop',33, MA_ERR)

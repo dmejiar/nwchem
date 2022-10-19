@@ -62,6 +62,8 @@
       type(context_type),allocatable      :: ctx
       type(param_record),allocatable      :: param
 
+      logical frag
+
 #ifdef USE_OPENMP
       integer maxthreads
       maxthreads = omp_get_max_threads()
@@ -81,6 +83,8 @@
       ovecs = ga_nodeid().eq.0 .and. util_print('vecs',print_default)
 
       call xtb_rdinput(rtdb)
+
+      if (.not.rtdb_get(rtdb,'qmd:frag',mt_log,1,frag)) frag=.false.
 
       if (oprint) then
         write(luout,*)
@@ -338,7 +342,7 @@ c
         endif
 
         !call xtb_restart_write(wfn%density, int(calc%bas%nao))
-        call xtb_restart_write(mol, calc, wfn)
+        call xtb_restart_write(mol, calc, wfn, frag)
         status = rtdb_put(rtdb,'xtb:restart',mt_log,1,.true.)
 
         dipole(1:3) = sum(wfn%dpat(:,:,1),dim=2)

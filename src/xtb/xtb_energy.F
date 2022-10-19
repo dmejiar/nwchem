@@ -277,7 +277,7 @@
             write(luout,*)
           endif
         endif
-        call xtb_restart_write(mol, calc, wfn)
+        call xtb_restart_write(mol, calc, wfn, .false.)
         status = rtdb_put(rtdb,'xtb:restart',mt_log,1,.true.)
         xtb_energy = .not.ctx%failed()
       endif

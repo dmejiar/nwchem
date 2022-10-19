@@ -1,4 +1,4 @@
-      subroutine xtb_restart_write(mol, calc, wfn)
+      subroutine xtb_restart_write(mol, calc, wfn, frag)
       use mctc_io, only : structure_type
       use tblite_xtb_calculator, only: xtb_calculator
       use tblite_wavefunction_type, only : wavefunction_type
@@ -8,6 +8,7 @@
       type(structure_type) :: mol
       type(xtb_calculator) :: calc
       type(wavefunction_type) :: wfn
+      logical frag
 
       integer i, unitno, ispin
       parameter(unitno=66)
@@ -23,5 +24,17 @@ c        enddo
         call swrite(unitno, wfn%dpat(1,1,ispin), int(3*mol%nat))
         call swrite(unitno, wfn%qpat(1,1,ispin), int(6*mol%nat))
       enddo
-      close(unit=unitno)
+      call util_flush(unitno)
+      close(unit=unitno,status='keep')
+
+      if (frag) then
+      open(unit=unitno,status='unknown',form='formatted',
+     $     file='charge',position='rewind')
+      do i=1,mol%nat
+        write(unitno,*) wfn%qat(i,1)
+      enddo
+      call util_flush(unitno)
+      close(unit=unitno,status='keep')
+      endif
+
       end

@@ -135,6 +135,7 @@ c
       double precision dft_dencvg, dft_time
       external dft_dencvg
       integer l_ir, k_ir
+      logical frag
 cc AJL/Begin/FDE
 c      logical last_time_energy,noscf,frozemb
       logical last_time_energy,noscf
@@ -251,6 +252,9 @@ C     RTDB flag for printing out all matrices
       character*256 file_mat1,movecs_in_org
       integer ma_type, no_sflip,l_at_flip,k_at_flip
       character*26 date
+
+
+      if (.not.rtdb_get(rtdb,'qmd:frag',mt_log,1,frag)) frag=.false.
 
 c     == initialize DIIS call counter ==
       icall(1) = 0
@@ -2296,12 +2300,12 @@ c Qin / print Lowdin populations.
         if (me.eq.0) call dft_header
      &        (' Total Density - Lowdin Population Analysis')
         call diis_bld12(toll_s, svals, g_svecs,  g_tmp2, g_tmp, 3)
-        call lowd_pop(geom, ao_bas_han, g_dens(1), g_tmp2, g_tmp)
+        call lowd_pop(geom, ao_bas_han, g_dens(1), g_tmp2, g_tmp, frag)
         if (ipol.eq.2)then
          if (me.eq.0)call dft_header
      &        (' Spin Density - Lowdin Population Analysis')
          call ga_dadd(1d0,g_dens(1),-2.d0,g_dens(2),g_dens(2))
-         call lowd_pop(geom,ao_bas_han,g_dens(2), g_tmp2, g_tmp)
+         call lowd_pop(geom,ao_bas_han,g_dens(2), g_tmp2, g_tmp,.false.)
          call ga_dadd(1d0,g_dens(1),-1.d0,g_dens(2),g_dens(2))
          call ga_dscal(g_dens(2),0.5d0)
         endif
