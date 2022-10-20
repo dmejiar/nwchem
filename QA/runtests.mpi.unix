@@ -30,6 +30,10 @@
 # A subdirectory of the current directory named scratchdir is deleted
 # and remade for each calculation, and deleted at job end.
 export HYDRA_DEBUG=0
+# find memory leaks using  this glibc feature that
+# initialized memory blocks to non-zero values
+export MALLOC_PERTURB_=$(($RANDOM % 255 + 1))
+
 if [[ -z "${NWCHEM_TARGET}" ]]; then
     UNAME_S=$(uname -s)
   if [[ ${UNAME_S} == Linux ]]; then
@@ -97,7 +101,7 @@ done
  CURDIR=$(pwd)
 
  # Figure out where the executable is.
-if [[ $(echo $NWCHEM_EXECUTABLE|cut -c 1-11) == 'singularity' ]] || [[ -f $NWCHEM_EXECUTABLE ]]; then
+if [[ $(echo $NWCHEM_EXECUTABLE|cut -c 1-11) == 'singularity' ]] || [[ $(echo $NWCHEM_EXECUTABLE|cut -c 1-9) == 'apptainer' ]] || [[ -f $NWCHEM_EXECUTABLE ]]; then
   NWCHEM=$NWCHEM_EXECUTABLE
 else
   NWCHEM=${NWCHEM_PROJ_PATH}/nwchem

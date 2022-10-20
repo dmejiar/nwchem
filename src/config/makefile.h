@@ -2245,7 +2245,7 @@ ifneq ($(TARGET),LINUX)
                 FOPTIONS  += -fopenmp
                 LDOPTIONS += -fopenmp
                 ifdef USE_OFFLOAD
-                    DEFINES +=-DUSE_F90_ALLOCATABLE -DUSE_OMP_TEAMS_DISTRIBUTE
+#                    DEFINES +=-DUSE_F90_ALLOCATABLE -DUSE_OMP_TEAMS_DISTRIBUTE
                 endif
             endif
         endif
@@ -2455,6 +2455,13 @@ ifneq ($(TARGET),LINUX)
 #               CPP=fpp -P
 #
                 ifeq ($(_IFCV15ORNEWER), Y)
+		  IFORTVER=$(shell ifort -v 2>&1|cut -d " " -f 3)
+                ifeq ($(IFORTVER),2021.7.0)
+                   $(info     )
+                   $(info     ifort 2021.7.0 not validated)
+                   $(info     )
+                   $(error )
+                endif
 #                   fpp seems to get lost with ifort 15 in the offload bit
 #                   only use EXPLICITF for offload because otherwise we want debugging to be easy
 #                   FOPTIONS +=  -Qoption,fpp,-P -Qoption,fpp,-c_com=no  -allow nofpp_comments 
@@ -2998,7 +3005,7 @@ ifneq ($(TARGET),LINUX)
                     FOPTIONS  += -qsmp=omp
 		    LDOPTIONS += -qsmp=omp
                     ifdef USE_OFFLOAD
-                        DEFINES +=-DUSE_F90_ALLOCATABLE -DOPENMP_OFFLOAD -DUSE_OMP_TEAMS_DISTRIBUTE
+#                        DEFINES +=-DUSE_F90_ALLOCATABLE -DOPENMP_OFFLOAD -DUSE_OMP_TEAMS_DISTRIBUTE
                         OFFLOAD_FOPTIONS = -qtgtarch=sm_70 -qoffload
                         LDOPTIONS += -qoffload -lcudart -L$(NWC_CUDAPATH)
                     endif
@@ -3060,6 +3067,10 @@ ifneq ($(TARGET),LINUX)
                 endif
                 LDOPTIONS += -mp
 	      endif
+		ifdef USE_OFFLOAD
+		  FOPTIONS += -mp=gpu #-gpu=cc70
+		  LDOPTIONS += -mp=gpu # -gpu=cc70
+		endif
             endif
 	    ifdef USE_FPE
 	        FOPTIONS += -traceback
@@ -3075,6 +3086,13 @@ ifneq ($(TARGET),LINUX)
             endif
         endif
 
+        ifdef USE_OPENMP
+            ifdef USE_OFFLOAD
+                DEFINES +=-DUSE_F90_ALLOCATABLE -DOPENMP_OFFLOAD -DUSE_OMP_TEAMS_DISTRIBUTE
+#                DEFINES +=-DUSE_F90_ALLOCATABLE -DUSE_OMP_TEAMS_DISTRIBUTE
+            endif
+        endif
+		
 
         ifeq ($(NWCHEM_TARGET),CATAMOUNT)
             DEFINES  += -DCATAMOUNT
@@ -3703,6 +3721,21 @@ ifdef TCE_CUDA
     endif
     ifeq ($(_CC),pgcc)
         COPTIONS += -acc
+    endif
+endif
+
+ifdef TCE_OPENACC
+    ifdef USE_OPENMP
+        $(error USE_OPENMP must be unset when TCE_OPENACC is set)
+    endif
+    DEFINES +=-DUSE_F90_ALLOCATABLE -DTCE_OPENACC
+    ifeq ($(_FC),gfortran)
+        FOPTIONS += -fopenacc
+        LDOPTIONS += -fopenacc
+    endif
+    ifeq ($(_FC),pgf90)
+        FOPTIONS += -acc
+        LDOPTIONS += -acc
     endif
 endif
 

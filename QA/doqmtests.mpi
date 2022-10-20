@@ -3,7 +3,13 @@
 # $Id$
 #
 function get_limit () {
-    echo $(($1 < $2 ? $1 : $2))
+    min=$(($1 < $2 ? $1 : $2))
+    # modulo 8
+    if [[ min -gt 8 ]]; then
+	echo $(($min-$min%8))
+    else
+	echo $min
+    fi
 }
 let np=1
 if [ -n "$1" ]; then
@@ -79,7 +85,7 @@ echo 'Please check the final values for the last optimized structure.'
 ./runtests.mpi.unix procs $np si2cl6_gc
 np_small=$(get_limit $np 32)
 ./runtests.mpi.unix procs $np_small pspw
-./runtests.mpi.unix procs $np pspw_SiC
+./runtests.mpi.unix procs $np_small pspw_SiC
 ./runtests.mpi.unix procs $np pspw_blyp_h2o
 ./runtests.mpi.unix procs $np pspw_revpbe_h2o
 ./runtests.mpi.unix procs $np pspw_pbesol_h2o
@@ -100,10 +106,11 @@ np_small=$(get_limit $np 32)
 ./runtests.mpi.unix procs $np pspw_hse_h2o
 np_small=$(get_limit $np 64)
 ./runtests.mpi.unix procs $np_small pspw_md
+np_small=$(get_limit $np 32)
 ./runtests.mpi.unix procs $np_small paw
 np_small=$(get_limit $np 16)
 ./runtests.mpi.unix procs $np_small pspw_polarizability
-./runtests.mpi.unix procs $np pspw_stress
+./runtests.mpi.unix procs $np_small pspw_stress
 np_small=$(get_limit $np 64)
 ./runtests.mpi.unix procs $np_small band
 ./runtests.mpi.unix procs $np tddft_h2o
@@ -335,6 +342,11 @@ np_small=$(get_limit $np 16)
 ./runtests.mpi.unix procs $np hgh-hfc-x2c-gnuc
 ./runtests.mpi.unix procs $np hgh-hfc-x2c-pnuc
 ./runtests.mpi.unix procs $np hg-1e-hfc-x2c
+# tblite
+if [[ ! -z "${USE_TBLITE}" ]]; then
+./runtests.mpi.unix procs $np xtb_siosi3
+./runtests.mpi.unix procs $np xtb_siosi7
+fi
 #--- if we only want quick tests get out now!
 if [[ "$what" == "fast" ]]; then
   exit
@@ -385,6 +397,7 @@ echo 'misc tests'
 echo 'The following  tests require few processors but a lot of time'
 ./runtests.mpi.unix procs $np ch4cl_zts
 ./runtests.mpi.unix procs $np cui_hiraobs
+./runtests.mpi.unix procs $np mep-test
 if [[ "$what" != "flaky" ]]; then
   exit
 fi
@@ -402,6 +415,6 @@ echo 'the following tests are know to be numerically unstable'
 ./runtests.mpi.unix procs $np qmmm_opt0
 ./runtests.mpi.unix procs $np pspw_scan_h2o
 ./runtests.mpi.unix procs $np pspw_vs98_h2o
-./runtests.mpi.unix procs $np h2o_selci
+np_small=$(get_limit $np 8)
+./runtests.mpi.unix procs $np_small h2o_selci
 ./runtests.mpi.unix procs $np h2o_vscf
-./runtests.mpi.unix procs $np mep-test

@@ -669,6 +669,7 @@ c      double precision constr(nconstr)
       double precision fddl
 #include "mafdecls.fh"
 #include "global.fh"
+#include "errquit.fh"
       integer lgtia, igtia, ngtia, iigtia, jjgtia
       integer ioc, iuoc, nuoc, i, j
       double precision temp
@@ -686,7 +687,7 @@ c      double precision constr(nconstr)
 
       ngtia=noc*nuoc*nconstr
       if(.not.MA_Push_Get(MT_Dbl,ngtia,'gtia',lgtia,igtia))
-     $       call errquit('derivatives: cannot allocate gtia)',0)
+     $       call errquit('derivatives: cannot allocate gtia)',0,MA_ERR)
 c
       call dfill(ngtia, 0.0d0, dbl_mb(igtia), 1)
 c
@@ -741,7 +742,7 @@ c
       enddo
 
       if(.not.ma_pop_stack(lgtia))
-     $   call errquit('cdft_deriv: cannot pop stack',0)
+     $   call errquit('cdft_deriv: cannot pop stack',0,MA_ERR)
 
       return
       end
