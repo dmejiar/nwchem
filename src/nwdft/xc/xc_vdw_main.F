@@ -236,6 +236,11 @@ c
              force(:,j) = force(:,j) - dEdrij*rij/rAj
            enddo
          enddo
+         if (ga_nodeid().eq.0) then
+c         do A=1,n
+c           write(*,*) force(1:3,A)
+c         enddo
+         endif
 c
       endif
 c

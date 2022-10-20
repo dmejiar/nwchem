@@ -41,11 +41,13 @@ C>
       double precision cni !< [Input] \f$\mathrm{CN}^A(R)\f$
       double precision cnj !< [Input] \f$\mathrm{CN}^B(R)\f$
       double precision top,bottom,dist,c6_ref
-      double precision cna,cnb
+      double precision cna,cnb,rsave,c6mem
       integer i,j
       double precision eps
-      parameter (eps=1d-90)
+      parameter (eps=1.0d-90)
 c
+      c6mem = -1.0d99
+      rsave = 1.0d99
       c6cn=0.0d0
       top=0.0d0
       bottom=0.0d0
@@ -56,6 +58,10 @@ c
                cna=c6ab(iat,jat,i,j,2)
                cnb=c6ab(iat,jat,i,j,3)
                dist=(cna-cni)**2+(cnb-cnj)**2
+               if (dist.lt.rsave) then
+                 rsave = dist
+                 c6mem = c6_ref
+               endif
                top=top+dexp(k3*dist)*c6_ref
                bottom=bottom+dexp(k3*dist)
             endif
@@ -65,8 +71,7 @@ c
       if (bottom.gt.eps) then
          c6cn=top/bottom
       else
-         c6cn=0.0d0
-         call errquit(' c6cn returning zero ',0,0)
+         c6cn=c6mem
       endif
       return
       end
@@ -105,7 +110,7 @@ C>
       double precision t1,t2,nomi,nomj,denomi,denomj
       double precision tmp1,tmp2,tmp3,tmp4,fac1,fac2
       double precision eps
-      parameter (eps=1d-30)
+      parameter (eps=1d-90)
       integer i,j
 c
       t1=0.0d0
