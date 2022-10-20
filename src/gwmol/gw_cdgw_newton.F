@@ -109,13 +109,13 @@
           Sigma_X  = Sigmax(llmo+iqp-1,isp)
 
 c          if (eviter.lt.10) then
-            if (myul.lt.ulqp) then
-              Eout = Enew(llmo+iqp,isp) + 0.01d0
-            elseif (myll.gt.llqp) then
-              Eout = Enew(llmo+iqp-2,isp) - 0.01d0
-            else
+c            if (myul.lt.ulqp) then
+c              Eout = Enew(llmo+iqp,isp) + 0.01d0
+c            elseif (myll.gt.llqp) then
+c              Eout = Enew(llmo+iqp-2,isp) - 0.01d0
+c            else
               Eout = Eout + sign(0.01d0,Eout)
-            endif
+c            endif
 c          endif
 
           call ga_zero(pars%g_sols)
