@@ -1,4 +1,5 @@
       subroutine qmd_ext_init(nat,dt_nucl,kbt,ext_forces,istep)
+      use iso_c_binding, only: c_int
       implicit none
 #include "mafdecls.fh"
 #include "global.fh"
@@ -25,7 +26,7 @@ c     pass plumed initialization bits
       if(ga_nodeid().eq.0) then
       call plumed_f_gcreate()
       call plumed_f_gcmd("setRealPrecision"//char(0),
-     c     MA_sizeof(MT_DBL,1,MT_BYTE))
+     c     int(MA_sizeof(MT_DBL,1,MT_BYTE),kind=c_int))
 c we have no barostat/virial in qmd      
       call plumed_f_gcmd("setNoVirial"//char(0),0)
 c conversion factor between the energy unit used in nwchem and kJ mol-1      
@@ -33,7 +34,7 @@ c conversion factor between the energy unit used in nwchem and kJ mol-1
 c conversion factor between the length unit used in nwchem and nm      
       call plumed_f_gcmd("setMDLengthUnits"//char(0),cau2nm)
 c conversion factor between the time unit used in nwchem and ps      
-      call plumed_f_gcmd("setMDTimeUnits"//char(0),cau2fs/1000)
+      call plumed_f_gcmd("setMDTimeUnits"//char(0),cau2fs/1000.0d0)
 
 c     get input file name
       call util_file_name('plumed.dat',.false.,.false.,extfrc_input)
@@ -68,7 +69,7 @@ c     get output file name
      E     extfrc_output(1:inp_strlen(extfrc_output))//char(0))
       nat4=nat
       call plumed_f_gcmd("setNatoms"//char(0),nat4)
-      call plumed_f_gcmd("setMDEngine"//char(0),"nwchem")
+      call plumed_f_gcmd("setMDEngine"//char(0),"nwchem"//char(0))
 #ifdef PLUMED_HASMPI 
       call plumed_f_gcmd("setMPIFComm"//char(0),ga_comm4)
 #endif
@@ -94,6 +95,7 @@ c     kBT
 
       subroutine qmd_ext_gradient(nat,istep_nucl,energy,m,g,r,
      E     ext_forces)
+      use iso_c_binding, only: c_int
       implicit none
 #include "global.fh"      
 #include "mafdecls.fh"
@@ -114,7 +116,8 @@ c     pointer to current timestep
       if(ext_forces(1:inp_strlen(ext_forces)).ne.'plumed') call
      E     errquit(' qmd_ext works only with plumed ',0,0)
       if(ga_nodeid().eq.0) then
-      call plumed_f_gcmd("setStep"//char(0),istep_nucl-sstep+1)
+      call plumed_f_gcmd("setStep"//char(0),
+     $                   int(istep_nucl-sstep+1,kind=c_int))
       call plumed_f_gcmd("setMasses"//char(0),m)
 c plumed uses forces not gradientes. double flip
 c first flip

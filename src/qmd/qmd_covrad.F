@@ -48,7 +48,7 @@
         if (.not.status_tag)call errquit
      &      ('qmd_covrad:geom_tag_to_element failed:i',911,
      &       GEOM_ERR)
-        covrad(iat) = rad(atn)*1.75d0
+        covrad(iat) = rad(atn)*1.65d0
       enddo
 
       end subroutine

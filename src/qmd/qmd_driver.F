@@ -520,6 +520,9 @@ c       restart file has been written so set restart flag in RTDB
         if (.not.rtdb_put(rtdb,'qmd:restart',mt_log,1,.true.))
      &    call errquit(pname//'failed to write restart',0,RTDB_ERR)
 
+        if (do_frag)
+     &    call ga_brdcst(mt_log,stopnow,8,0)
+
         if (stopnow) exit
 c
       end do  ! istep_nucl

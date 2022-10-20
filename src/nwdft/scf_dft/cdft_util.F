@@ -209,7 +209,7 @@ C$Id$
       integer iga_ps             ! product   GA handle
       integer g_tmp             
 
-      integer natoms,nshells
+      integer natoms,nshells,iat
       integer lPSmat,iPSmat,lqatom,iqatom,lqshell,iqshell
       integer iatom,ilo,ihi,nbf,max_at_bf2
 c     
@@ -259,8 +259,19 @@ c
      &     iga_s,g_tmp,0.d0,iga_PS)
       call mull_calc(basis,natoms, nshells,max_at_bf2,iga_PS,
      &     dbl_mb(iqatom),dbl_mb(iqshell),dbl_mb(iPSmat), 'total')
-      
+
+
       call ga_sync
+      
+      if (ga_nodeid().eq.0) then
+        open(unit=66,status='unknown',form='formatted',
+     $       file='charge',position='rewind')
+        do iat=0,natoms-1
+          write(66,*) dbl_mb(iqatom+iat)
+        enddo
+        close(unit=66,status='keep')
+      endif
+      
 
       if(.not.MA_Pop_Stack(lqshell))
      &     call errquit(' exiting in mull_pop',33, MA_ERR)

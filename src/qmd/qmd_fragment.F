@@ -64,8 +64,18 @@
           fragstep = 0
         endif
       else
+        fragment = .true.
         fragstep  = fragstep + 1
-        if (fragstep*dt.ge.100.0d0) stopnow = .true.
+        if (fragstep*dt.ge.50.0d0) stopnow = .true.
+      endif
+
+      if (nfrag.gt.1) then
+        write(*,*)
+        write(*,*) '@! Fragmentation detected, stopping NWChem'
+        do iat=1,nat
+          write(*,*) iat,idfrag(iat)
+        enddo
+        write(*,*)
       endif
         
       end subroutine
