@@ -450,24 +450,26 @@ c     >                                dbl_mb(s(1)))
              finishedstep = .false.
              alpha = time_step
              jj = 0
-             do while ((.not.finishedstep).and.(jj.lt.9))
-                jj = jj + 1
+c             do while ((.not.finishedstep).and.(jj.lt.9))
+c                jj = jj + 1
                 sum = ddot(ng,dbl_mb(g0(1)),1,dbl_mb(s(1)),1)
                 sum2 = dsqrt(ddot(ng,dbl_mb(s(1)),1,dbl_mb(s(1)),1))
-     >                 /dble(nbeads)
-                if (oprint) write(*,*) "neb: |<s|s>|,<g|s>=",sum2,sum
+                if (sum2.gt.1.0d0) alpha = 0.3d0
 
+                if (oprint) write(*,*) "neb: |<s|s>|,<g|s>=",sum2,sum
+c
                 if ((sum.le.0.0d0).or.
-     >              (sum0.gt.sum0_old).or.
-     >              (sum2.gt.1.0d0))  then
+c     >              (sum0.gt.sum0_old).or.
+     >              ((sum2.gt.1.0d0).and.(itm.gt.2)))  then
                    call dcopy(ng,dbl_mb(g0(1)),1,dbl_mb(s(1)),1)
                    itm = 0
                    if (oprint) write(*,*) "neb: s=g and itm reset to 0"
                    if (oprint) write(*,*) "neb: sum,sum0,sum0_old=",
      >                                    sum,sum0,sum0_old
+                   alpha = time_step
                    sum = ddot(ng,dbl_mb(g0(1)),1,dbl_mb(s(1)),1)
                    sum2 = dsqrt(ddot(ng,dbl_mb(s(1)),1,dbl_mb(s(1)),1))
-     >                 /dble(nbeads)
+                   if (sum2.gt.1.0d0) alpha = 0.3d0
                    if (oprint) write(*,*) "neb: |<s|s>|,<g|s>=",sum2,sum
                 end if
 
@@ -524,35 +526,35 @@ c                   if (oprint) write(*,*) "neb: x0,x1,x2,f0,f1,f2=",
 c     >                         x0,x1,x2,f0,f1,f2
 c                end if
 
-                finishedstep = (sum0.le.sum0_old)
-                if (.not.finishedstep) then
-                    alpha = 0.50d0*alpha
-                    manyjj = manyjj+1
-                    goodjj = 0
-                    if (manyjj.gt.2) then
-                       time_step = 0.5d0*time_step
-                       manyjj = 0
-                       if (oprint) 
-     >                  write(*,*) "neb: reducing timestep=",time_step
-                    end if
-                end if
-                if (finishedstep.and.(jj.eq.1)) then
-                   goodjj = goodjj + 1
-                   if (goodjj.gt.10) then
-                      time_step = 2.0d0*time_step
-                      if (time_step.gt.time_step0) time_step=time_step0
-                      goodjj = 0
-                   end if
-                end if
-
+c                finishedstep = (sum0.le.sum0_old)
+c                if (.not.finishedstep) then
+c                    alpha = 0.50d0*alpha
+c                    manyjj = manyjj+1
+c                    goodjj = 0
+c                    if (manyjj.gt.2) then
+c                       time_step = 0.5d0*time_step
+c                       manyjj = 0
+c                       if (oprint) 
+c     >                  write(*,*) "neb: reducing timestep=",time_step
+c                    end if
+c                end if
+c                if (finishedstep.and.(jj.eq.1)) then
+c                   goodjj = goodjj + 1
+c                   if (goodjj.gt.10) then
+c                      time_step = 2.0d0*time_step
+c                      if (time_step.gt.time_step0) time_step=time_step0
+c                      goodjj = 0
+c                   end if
+c                end if
+c
                 if(oprint) 
      >             write(*,*) "neb: sum0a,sum0b,sum0,sum0_old=",
      >                sum0a,sum0b,sum0,sum0_old,jj,finishedstep,alpha
 
 c                  if (finishedstep) sum0_old = sum0
 
-             end do
-             if (sum0b.ge.sum0_old) time_step = 0.5d0*time_step
+c             end do
+             if (sum0b.ge.sum0_old) time_step = time_step
              sum0_old = sum0
 
 
@@ -641,12 +643,16 @@ c                  if (finishedstep) sum0_old = sum0
      >                                dbl_mb(c1(1)),
      >                                Gmax,Grms,Xmax,Xrms)
 
-         stalled = ((Gmax.ge.gmax0).or.(Grms.ge.grms0)).and.(it.gt.1)
+         stalled=((Gmax.ge.1.3d0*gmax0).or.(Grms.ge.1.3d0**grms0)).and.
+     >             (it.gt.1)
 
          !*** neb algorithm 3 - switch between fixed point and damped Verlet ***
          if (neb_algorithm.ge.3) then
 
             !*** switch to fixed point if Gmax less than 0.5 ***
+            if (ga_nodeid().eq.0)write(*,*)gmax.lt.0.5d0,gmax.lt.gmax0,
+     >                  grms.lt.grms0
+
             if ((Gmax.lt.0.5d0).and.
      >          (Gmax.lt.Gmax0).and.
      >          (Grms.lt.Grms0).and.
