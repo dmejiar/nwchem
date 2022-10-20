@@ -341,16 +341,16 @@ c         call daxpy(3*nion,(-1.0d0),
 c     >               c(index),1,
 c     >               t(rp),   1)
 
-         if   ( ((e(i+1)-e(i)).gt.1.0e-2).and.
-     >          ((e(i)-e(i-1)).gt.1.0d-2) ) then
+         if   ( ((e(i+1)-e(i)).gt.0d0).and.
+     >          ((e(i)-e(i-1)).gt.0d0) ) then
             call dcopy(3*nion,t(rp),1,t(index),1)
-         else if ( ((e(i-1)-e(i)).gt.1.0d-2) .and.
-     >             ((e(i)-e(i+1)).gt.1.0d-2) ) then
+         else if ( ((e(i-1)-e(i)).gt.0d0) .and.
+     >             ((e(i)-e(i+1)).gt.0d0) ) then
             call dcopy(3*nion,t(rm),1,t(index),1)
          else
             
              if ( (dabs(e(i+1)-e(i))-dabs(e(i-1)-e(i)))
-     >           .gt.1.0d-3) then
+     >           .gt.0d0) then
                dVmax = dabs(e(i+1)-e(i))
                dVmin = dabs(e(i-1)-e(i))
              else
@@ -358,7 +358,7 @@ c     >               t(rp),   1)
                dVmin = dabs(e(i+1)-e(i))
              end if
 
-             if ((e(i+1)-e(i-1)).gt.1.0d-2) then
+             if ((e(i+1)-e(i-1)).gt.0d0) then
                call dscal(3*nion,dVmax,t(rp),1)
                call dscal(3*nion,dVmin,t(rm),1)
              else
@@ -1145,7 +1145,7 @@ c          call daxpy(3*nion,t,dbl_mb(r2(1)),1,dbl_mb(r3(1)),1)
 *        *** NEED: CONSTRAINED DYNAMICS (FROZEN ATOMS)
          do i=1,ng
            v1(i) = c1(i)-c0(i)
-           if (v1(i)*g1(i).gt.0.0d0) v1(i) = 0.0d0
+c           if (v1(i)*g1(i).gt.0.0d0) v1(i) = 0.0d0
          end do
          call dcopy(ng,c1(1),1,c0(1),1)
          do i=1,ng
@@ -1278,7 +1278,7 @@ c     *** choosing Polac-Ribiere coeff ***
          tmp = tmp - ddot(n,x(1,k+1),1,g(1,k),  1)
          tmp = tmp - ddot(n,x(1,k),  1,g(1,k+1),1)
          tmp = tmp + ddot(n,x(1,k),  1,g(1,k),  1)
-         if (dabs(tmp).gt.1.0d-9) then
+         if (dabs(tmp).gt.1.0d-12) then
              rho(k) = 1.0d0/tmp
          else
              rho(k) = 0.0d0
@@ -1294,6 +1294,14 @@ c     *** choosing Polac-Ribiere coeff ***
         call daxpy(n,(-alpha(k)),g(1,k+1),1,hg,1)
         call daxpy(n,( alpha(k)),g(1,k),  1,hg,1)
       end do
+
+      if (m.gt.2) then
+        tmp = ddot(n,g(1,m-1),1,g(1,m-1),1) - 
+     $        2.0d0*ddot(n,g(1,m-1),1,g(1,m-2),1) +
+     $        ddot(n,g(1,m-2),1,g(1,m-2),1)
+        tmp = 1.0d0/rho(m-2)/tmp
+        call dscal(n,tmp,hg,1)
+      endif
 
       do k = 1,(m-1)
         beta(k) = rho(k)
