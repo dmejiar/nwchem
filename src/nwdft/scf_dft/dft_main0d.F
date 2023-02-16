@@ -427,8 +427,8 @@ c
       call dfill(nbf_ao, 0.0d0, dbl_mb(isvals), 1)
       call int_1e_ga(AO_bas_han, AO_bas_han, g_s, 'overlap', oskel)
       if (oskel)call sym_symmetrize(geom, AO_bas_han, .false., g_s)
-c     
-c     
+
+c
 c     orthog BS
 c     
 c     Diag Overlap Matrix
@@ -545,6 +545,9 @@ c     == Begin iteration sequence with S**(-1/2) in g_evecs arrays ==
      &     call errquit(pname//'Error creating ga',0,GA_ERR)
       call diis_bld12(toll_s, dbl_mb(isvals), g_svecs, g_evecs(1), 
      &     g_tmp,  2)
+
+      if (dftplusu) call dftplusu_init(rtdb,g_s,g_evecs(1),g_tmp)
+c     
       if (.not. ga_destroy(g_tmp)) call errquit
      &   (pname//'Could not destroy g_tmp', 0, GA_ERR)
       if (ipol.gt.1) call ga_copy(g_evecs(1), g_evecs(2))
@@ -666,6 +669,8 @@ c     Clean up time propagation arrays
      &   (pname//'Could not destroy g_ddotE', 0, GA_ERR)
       end if
 c
+      if (dftplusu) call dftplusu_end()
+
       if (.not.ma_chop_stack(lsvals))
      &  call errquit(pname//'Cannot chop stack lsvals', 12, MA_ERR)
 c

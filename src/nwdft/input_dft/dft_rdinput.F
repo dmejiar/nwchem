@@ -32,7 +32,7 @@ c
 #include "util.fh"
 #include "steric.fh"
 c
-      integer itype, icenter, jcenter
+      integer itype, icenter, jcenter, idummy
       integer lcoord, icoord, lcharge, icharge, ltags, itags,
      &        lznuc, iznuc
       integer i_typetag,l_typetag
@@ -981,7 +981,15 @@ c
         endif
         if (.not.rtdb_put(rtdb,'dft:freecdfit',mt_log,1,freecdfit))
      $    call errquit(pname//'rtdb_put failed',980, RTDB_ERR)
-      endif   
+      endif
+c
+c     DFT+U
+c
+      if(.not.rtdb_get(rtdb,"dft:plusu:nvals",mt_int,1,idummy)) then
+        dftplusu = .false.
+      else
+        dftplusu = .true.
+      endif
 C
 C AJL/END
 c

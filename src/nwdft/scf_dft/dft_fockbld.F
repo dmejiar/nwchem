@@ -110,7 +110,9 @@ c      double precision rho_n_fde ![out]
 cc AJL/End
       double precision t0
       integer g_adft(2)
-c
+      double precision get_edftplusu
+      external get_edftplusu
+
       do_cosmo_smd = .false.
       do_cosmo_vem = 0
       gcds = 0.D0
@@ -383,6 +385,7 @@ c
      &      call errquit('dft_scf: cannot pop stack',0, MA_ERR)
       endif
 c
+c
 c     DIM/QM JEM
 c     Calculate DIM potential and energy
 c     We calculate the DIM potential at each point from the total density
@@ -434,6 +437,9 @@ cc AJL/End
       if (oprint_time)call dft_tstamp(' Before call to GETVXC.  ')
 c
       if (odftps) call pstat_on(ps_xc)
+c
+      if (dftplusu) call dftplusu_hamiltonian(g_dens,g_focks)
+c
 c
 c     == Calculate the HF exchange (exact Coulomb), DFT exchange-correlation ==
 c     ! ADFT: pass fitting coefficients to build fitted density on the grid

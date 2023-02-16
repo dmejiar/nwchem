@@ -30,7 +30,7 @@ c
       integer num_dirs          ! No. of known directives
 cc AJL/Begin/FDE
 c      parameter (num_dirs = 48)
-      parameter (num_dirs = 54)
+      parameter (num_dirs = 55)
 cc AJL/End
       character*12 dirs(num_dirs)
       character*255 test
@@ -74,6 +74,10 @@ c     vspec variables
       integer owstart(2), owend(2)
       integer nexcite_win
 c
+c     hubbard u variables
+      double precision ueff
+      character*255 elements
+c
 c     xdm variables
       double precision xdm_a1, xdm_a2
       logical xdm_onlyc, xdm_varc
@@ -96,7 +100,7 @@ c     xps variables
      $         'frozemb', 'frozemb_xc', 'frozemb_ts',
      $         'cgmin','nocgmin','tol2e','ri-scf','lock',
      $         'rodft','fukui','maxiter','vspec','xps','xdm',
-     $         'densmat','adft','freecdfit','end'/
+     $         'densmat','adft','freecdfit','hubbard','end'/
 c
 c Qin / cdft
       integer nconstr
@@ -151,7 +155,7 @@ c
      $     2700, 2800, 2900, 3000, 3100, 3200, 3300, 3400, 
      $     3500, 3520, 3530,
      $     3600, 3600, 3700, 3800, 3900, 4000, 4100, 4200, 4300,
-     $     4400, 4500, 4600, 4700, 4800, 9999) ind
+     $     4400, 4500, 4600, 4700, 4800, 4900, 9999) ind
 
       call errquit('dft_input: unimplemented directive', ind,
      &       INPUT_ERR)
@@ -1014,6 +1018,12 @@ c     Only meaningful with a CD basis available
      &  call errquit('dft_input: rtdb_put failed',4800, RTDB_ERR)
       goto 10 
 c
+c     DFT+U
+ 4900 call dftplusu_inp(rtdb,'dft')
+
+      goto 10
+
+
  9999 continue
 c
       if (.not. rtdb_put(rtdb, 'dft:ipol', mt_int, 1, ipol))

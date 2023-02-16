@@ -251,6 +251,8 @@ C     RTDB flag for printing out all matrices
       character*256 file_mat1,movecs_in_org
       integer ma_type, no_sflip,l_at_flip,k_at_flip
       character*26 date
+      double precision get_edftplusu
+      external get_edftplusu
 
 c     == initialize DIIS call counter ==
       icall(1) = 0
@@ -1318,6 +1320,10 @@ c  jbecca START: adding in eelec here
 c  jbecca START adding in eelec here
          Etnew = Ecore + Ecoul + Exc(1) + Exc(2) + Edisp + eelec
       endif
+
+      if (dftplusu) then
+        Etnew = Etnew + get_edftplusu()
+      endif
 c
       if (oprint_conv_details.and.me.eq.0)then
          write(LuOut,*)'Etnew, Ecore, Ecoul, Exc(1), Exc(2), Totsic: ',
@@ -2098,6 +2104,10 @@ c  jbecca START: adding in eelec here
               Etnew = Ecore + Ecoul + Exc(1) + Exc(2) + Edisp +
      E           eelec + tdots
          endif
+
+         if (dftplusu) then
+           Etnew = Etnew + get_edftplusu()
+         endif
 c
 c        Add in cosmo contributions
 c
@@ -2147,6 +2157,7 @@ c        DIM/QM JEM
            write(LuOut,225) ecosmo
           end if
          endif
+         if (dftplusu) write(LuOut,226) get_edftplusu()
          if (do_zora) write(luout,2221) ener_scal
          write(luout,2222) rho_n
          write(luout,2223) dft_time
@@ -2630,6 +2641,7 @@ c
      &     ' Nuclear repulsion energy =', f22.12/)
  224  format('    Dispersion correction =', f22.12/)
  225  format('             COSMO energy =', f22.12/)
+ 226  format('     Hubbard U correction =', f22.12/)
 c
  2221 format('       Scaling correction =', f22.12/)
  2222 format(' Numeric. integr. density =', f22.12/)

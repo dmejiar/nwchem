@@ -9,7 +9,8 @@
         xc_inp.o \
         conv_inp.o \
 	cdft_inp.o \
-	occup_input.o
+	occup_input.o \
+	dftplusu_inp.o
 
      LIBRARY = libnwdft.a
 
