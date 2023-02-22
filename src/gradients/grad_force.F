@@ -653,7 +653,7 @@ c DFT+U
         
        
       if (dftplusu) then
-        call grad_dftplusu(rtdb, g_dens(1), g_wdens)
+        call grad_dftplusu(rtdb, g_dens(1), g_wdens, osep)
       endif
 
       cpu_tim(1)  = util_cpusec()

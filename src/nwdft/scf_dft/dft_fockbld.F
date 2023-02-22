@@ -385,7 +385,6 @@ c
      &      call errquit('dft_scf: cannot pop stack',0, MA_ERR)
       endif
 
-      if (dftplusu) call dftplusu_hamiltonian(g_dens,g_focks)
 c
 c
 c     DIM/QM JEM
@@ -436,6 +435,11 @@ cc Can't remember why I implemented this? To be tested.
 cc      if (ipol.gt.1) call ga_zero(g_vxc(2))
       if (ipol.gt.1) call ga_copy(g_vxc(1), g_vxc(2))
 cc AJL/End
+
+      if (dftplusu) then
+        call dftplusu_hamiltonian(g_dens,g_focks)
+      endif
+
       if (oprint_time)call dft_tstamp(' Before call to GETVXC.  ')
 c
       if (odftps) call pstat_on(ps_xc)

@@ -1,6 +1,7 @@
-      subroutine grad_dftplusu(rtdb, g_dens, g_wdens)
+      subroutine grad_dftplusu(rtdb, g_dens, g_wdens, osep)
       implicit none
 
+      logical osep
       integer rtdb, g_dens(2), g_wdens
 
 #include "bas.fh"
@@ -15,7 +16,7 @@
       integer g_tmp1, g_tmp2, g_tmp3, g_s12, g_s, g_ppt, g_svecs
       integer lsvals,ksvals,me,ish,ityp,nprim,ngen,ival,ibf
       integer ilo,ihi,jlo,jhi,i,j,iabf,iabl,iacf,iacl, sphcart
-      integer ifirst,ilast,iat
+      integer ifirst,ilast,iat,isp
       logical status,ga_create_atom_blocked
       external ga_create_atom_blocked
       double precision toll_s,fij
@@ -23,6 +24,16 @@
       parameter(toll_s=1d-10)
 
       me = ga_nodeid()
+
+c     Get spin resolved densities
+      if (ipol.gt.1) then
+        if (osep) then
+          call ga_add(1d0,g_dens(1),-1d0,g_dens(2),g_dens(1))
+        else
+          call ga_add(0.5d0,g_dens(1),0.5d0,g_dens(2),g_dens(1))
+          call ga_add(1d0,g_dens(1),-1d0,g_dens(2),g_dens(2))
+        endif
+      endif
 
 c     Create AO overlap matrix GA and get distribution
       g_s = ga_create_atom_blocked(geom, ao_bas_han, 'overlap')
@@ -89,44 +100,29 @@ c       Build Projector P*P^T
           enddo
         enddo
         call ga_sync()
+c
+        do isp=1,ipol
 
 c       Add contribution to energy-weighted density matrix
         if (mullpop) then
         ! Linear term
-          call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,factor,g_dens(1),
+          call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,factor,g_dens(isp),
      $                   g_ppt,0d0,g_tmp1)
           call ga_symmetrize(g_tmp1)
-          call ga_add(0.5d0*uvals(ival)/factor,g_tmp1,1d0,g_wdens,
+          call ga_add(-0.5d0*uvals(ival)/factor,g_tmp1,1d0,g_wdens,
      $                g_wdens)
 
         ! Idempotency term
-          call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,factor,g_dens(1),
+          call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,factor,g_dens(isp),
      $                   g_ppt,0d0,g_tmp1)
           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,1d0,g_tmp1,g_s,0d0,
      $                   g_tmp2)
           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,2d0,g_tmp2,g_tmp1,
      $                   0d0,g_tmp3)
           call ga_symmetrize(g_tmp3)
-          call ga_add(-0.5d0*uvals(ival)/factor,g_tmp3,1d0,g_wdens,
+          call ga_add(0.5d0*uvals(ival)/factor,g_tmp3,1d0,g_wdens,
      $                g_wdens)
 
-          if (ipol.gt.1) then
-           ! Linear term
-           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,1d0,g_dens(2),
-     $                   g_ppt,0d0,g_tmp1)
-           call ga_symmetrize(g_tmp1)
-           call ga_add(0.5d0*uvals(ival),g_tmp1,1d0,g_wdens,g_wdens)
-
-           ! Idempotency term
-           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,factor,g_dens(2),
-     $                   g_ppt,0d0,g_tmp1)
-           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,1d0,g_tmp1,g_s,
-     $                   0d0,g_tmp2)
-           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,2d0,g_tmp2,g_tmp1,
-     $                   0d0,g_tmp3)
-           call ga_symmetrize(g_tmp3)
-           call ga_add(-0.5d0*uvals(ival),g_tmp3,1d0,g_wdens,g_wdens)
-          endif
         else
           ! TMP1 -> P * P^T * S^(1/2)
           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,1d0,g_ppt,g_s12,
@@ -134,7 +130,7 @@ c       Add contribution to energy-weighted density matrix
 
           ! TMP2 -> P * P^T * S^(1/2) * D
           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,factor,g_tmp1,
-     $                   g_dens(1),0d0,g_tmp2)
+     $                   g_dens(isp),0d0,g_tmp2)
 
           ! TMP3 -> I - S^(1/2) * P * P^T * S^(1/2) * D
           call ga_zero(g_tmp3)
@@ -152,29 +148,6 @@ c       Add contribution to energy-weighted density matrix
           ! S -> 2*P*P^T*S^(1/2)*D * (I - S^(1/2) * P * P^T * S^(1/2) * D)
           call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,2d0,g_tmp2,g_tmp3,
      $                   0d0,g_s)
-
-          if (ipol.gt.1) then
-            ! TMP2 -> P * P^T * S^(1/2) * D
-            call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,1d0,g_tmp1,
-     $                     g_dens(2),0d0,g_tmp2)
-
-            ! TMP3 -> I - S^(1/2) * P * P^T * S^(1/2) * D 
-            call ga_zero(g_tmp3)
-            do i=ilo,ihi
-              do j=jlo,jhi
-                if (i.eq.j) then
-                  call ga_put(g_tmp3,i,i,i,i,1d0,1)
-                endif
-              enddo
-            enddo
-            call ga_sync()
-            call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,-2d0,g_s12,
-     $                     g_tmp2,1d0,g_tmp3)
-
-            ! S -> 2*P*P^T*S^(1/2)*D * (I - S^(1/2) * P * P^T * S^(1/2) * D)
-            call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,2d0,g_tmp2,
-     $                     g_tmp3,1d0,g_s)
-          endif
 
           ! Symmetrize
           call ga_symmetrize(g_s)
@@ -201,8 +174,10 @@ c       Add contribution to energy-weighted density matrix
      $                   0d0,g_tmp1)
           call ga_dgemm('n','t',nbf_ao,nbf_ao,nbf_ao,1d0,g_tmp1,g_svecs,
      $                   0d0,g_s)   
-          call ga_add(0.5d0*uvals(ival)/factor,g_s,1d0,g_wdens,g_wdens)
+          call ga_add(-0.5d0*uvals(ival)/factor,g_s,1d0,g_wdens,
+     $                 g_wdens)
         endif
+        enddo
       enddo
 
       status = ga_destroy(g_tmp1) .and. ga_destroy(g_tmp2) .and.
@@ -218,5 +193,12 @@ c       Add contribution to energy-weighted density matrix
       if (.not.status)
      $  call errquit("grad_dftplusu: GA destroy failed",0,GA_ERR) 
 
+c     Sum densities
+      if (ipol.gt.1) then
+        call ga_add(1d0,g_dens(1),1d0,g_dens(2),g_dens(1))
+        if (.not.osep) then
+          call ga_add(1d0,g_dens(1),-2d0,g_dens(2),g_dens(2))
+        endif
+      endif
 
       end subroutine
