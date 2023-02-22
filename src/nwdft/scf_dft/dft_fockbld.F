@@ -384,6 +384,8 @@ c
          if (.not.ma_pop_stack(lscr))
      &      call errquit('dft_scf: cannot pop stack',0, MA_ERR)
       endif
+
+      if (dftplusu) call dftplusu_hamiltonian(g_dens,g_focks)
 c
 c
 c     DIM/QM JEM
@@ -438,7 +440,6 @@ cc AJL/End
 c
       if (odftps) call pstat_on(ps_xc)
 c
-      if (dftplusu) call dftplusu_hamiltonian(g_dens,g_focks)
 c
 c
 c     == Calculate the HF exchange (exact Coulomb), DFT exchange-correlation ==

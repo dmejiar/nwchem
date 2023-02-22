@@ -1,6 +1,8 @@
          integer maxvals
 	 parameter(maxvals=10)
+	 logical mullpop
 	 integer nvals,lvals(maxvals),atoms(maxvals),g_spps(maxvals)
          double precision uvals(maxvals),edftplusu
 	 common /ddftu/ uvals,edftplusu
 	 common /idftu/ atoms,lvals,nvals,g_spps
+	 common /ldftu/ mullpop

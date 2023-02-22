@@ -13,7 +13,7 @@
 c     Parse DFT+U input
 c
       integer num_dirs, ind, uvals, avals, lvals
-      parameter(num_dirs=3)
+      parameter(num_dirs=4)
       character*10 dirs(num_dirs)
 
       integer max_atoms
@@ -26,12 +26,14 @@ c
       integer idummy
 
       character*255 test
+      logical mullpop
 
-      data dirs /'ueff','atoms','lvals'/
+      data dirs /'ueff','atoms','lvals','pop'/
 
       uvals = 0
       avals = 0
       lvals = 0
+      mullpop = .false.
 
    10 if(.not.inp_a(test)) goto 1999
 
@@ -39,30 +41,56 @@ c
          call errquit("dftplusu_inp: unknown directive",0,INPUT_ERR)
       endif
 
-      goto (1000,2000,3000) ind
+      goto (1000,2000,3000,4000) ind
       call errquit('dftplusu_inp: unknown directive',ind,INPUT_ERR)
       
 c     Effective Hubbard U values
  1000 continue
-      if(.not.inp_f(ddummy)) goto 10
+      if(.not.inp_f(ddummy)) then
+        if(uvals.eq.0)
+     $  call errquit("dftplusu_inp: could not find Ueff",0,INPUT_ERR)   
+        goto 10
+      endif
       uvals = uvals + 1
       ueff(uvals) = ddummy/27.2114d0
       goto 1000
 
 c     Atoms to apply U
  2000 continue
-      if(.not.inp_i(idummy)) goto 10
+      if(.not.inp_i(idummy)) then
+        if(avals.eq.0)
+     $  call errquit("dftplusu_inp: could not find Atom",0,INPUT_ERR)   
+        goto 10
+      endif
       avals = avals + 1
       atoms(avals) = idummy
       goto 2000
 
 c     L values to apply U
  3000 continue
-      if(.not.inp_i(idummy)) goto 10
+      if(.not.inp_i(idummy)) then
+        if(lvals.eq.0)
+     $  call errquit("dftplusu_inp: could not find L",0,INPUT_ERR)   
+        goto 10
+      endif
       lvals = lvals + 1
       shells(lvals) = idummy
       goto 3000
-
+c
+c     Population method
+ 4000 continue
+      if(.not.inp_a(test))
+     $  call errquit("dftplusu_inp: could not find Pop",0,INPUT_ERR)   
+      if (inp_compare(.false., test, 'mulliken')) then
+        mullpop = .true.
+      elseif (inp_compare(.false., test, 'loewdin')) then
+        mullpop = .false.
+      else
+       call errquit("dftplusu_inp: Unknown population method",0,
+     $                INPUT_ERR)   
+      endif
+      goto 10
+      
 c     END
  1999 continue
 
@@ -80,6 +108,8 @@ c     END
       if(.not.rtdb_put(rtdb,"dft:plusu:atoms",mt_int,uvals,atoms))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
       if(.not.rtdb_put(rtdb,"dft:plusu:lvals",mt_int,uvals,shells))
+     $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
+      if(.not.rtdb_put(rtdb,"dft:plusu:mullpop",mt_log,1,mullpop))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
 
       return

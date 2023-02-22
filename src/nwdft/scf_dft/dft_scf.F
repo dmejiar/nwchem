@@ -1897,6 +1897,10 @@ c  jbecca START: adding in eelec here for field int.
       else
         Etnew = Ecore + Ecoul + Exc(1) + Exc(2) + tdots + Edisp + eelec
       endif
+
+      if (dftplusu) then
+        Etnew = Etnew + get_edftplusu()
+      endif
 c
 c     Add in cosmo contributions
 c

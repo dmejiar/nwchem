@@ -173,7 +173,8 @@ c
       external has_frac_occ
 c
       logical lcdft  ! Qin
-      integer ipop
+      logical dftplusu
+      integer ipop, idummy
       logical out1
       logical zerof
 c
@@ -642,6 +643,19 @@ c Qin
         if(ipop.eq.3) call grad_cdens_lowd(rtdb, g_dens(1), g_wdens)
       endif
 c Qin / end
+
+c DFT+U
+      if (.not.rtdb_get(rtdb, 'dft:plusu:nvals', mt_int, 1, idummy))then
+        dftplusu = .false.
+      else
+        dftplusu = idummy.gt.0
+      endif
+        
+       
+      if (dftplusu) then
+        call grad_dftplusu(rtdb, g_dens(1), g_wdens)
+      endif
+
       cpu_tim(1)  = util_cpusec()
       wall_tim(1) = util_wallsec()
 c

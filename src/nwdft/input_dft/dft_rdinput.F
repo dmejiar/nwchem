@@ -988,7 +988,7 @@ c
       if(.not.rtdb_get(rtdb,"dft:plusu:nvals",mt_int,1,idummy)) then
         dftplusu = .false.
       else
-        dftplusu = .true.
+        dftplusu = idummy .gt. 0
       endif
 C
 C AJL/END
