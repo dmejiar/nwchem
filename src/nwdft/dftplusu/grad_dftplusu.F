@@ -1,8 +1,7 @@
-      subroutine grad_dftplusu(rtdb, g_dens, g_wdens, osep)
+      subroutine grad_dftplusu(rtdb, g_dens, g_wdens)
       implicit none
 
-      logical osep
-      integer rtdb, g_dens(2), g_wdens
+      integer natom, rtdb, g_dens(2)
 
 #include "bas.fh"
 #include "geom.fh"
@@ -13,6 +12,7 @@
 #include "cdft.fh"
 #include "dftplusu.fh"
 
+      integer g_wdens
       integer g_tmp1, g_tmp2, g_tmp3, g_s12, g_s, g_ppt, g_svecs
       integer lsvals,ksvals,me,ish,ityp,nprim,ngen,ival,ibf
       integer ilo,ihi,jlo,jhi,i,j,iabf,iabl,iacf,iacl, sphcart
@@ -25,19 +25,11 @@
 
       me = ga_nodeid()
 
-c     Get spin resolved densities
-      if (ipol.gt.1) then
-        if (osep) then
-          call ga_add(1d0,g_dens(1),-1d0,g_dens(2),g_dens(1))
-        else
-          call ga_add(0.5d0,g_dens(1),0.5d0,g_dens(2),g_dens(1))
-          call ga_add(1d0,g_dens(1),-1d0,g_dens(2),g_dens(2))
-        endif
-      endif
-
 c     Create AO overlap matrix GA and get distribution
       g_s = ga_create_atom_blocked(geom, ao_bas_han, 'overlap')
+      g_wdens = ga_create_atom_blocked(geom, ao_bas_han, 'wdens')
       call ga_distribution(g_s,me,ilo,ihi,jlo,jhi)
+      call ga_zero(g_wdens)
 
 c     Compute AO overlap matrix
       call ga_zero(g_s)
@@ -193,12 +185,133 @@ c       Add contribution to energy-weighted density matrix
       if (.not.status)
      $  call errquit("grad_dftplusu: GA destroy failed",0,GA_ERR) 
 
-c     Sum densities
-      if (ipol.gt.1) then
-        call ga_add(1d0,g_dens(1),1d0,g_dens(2),g_dens(1))
-        if (.not.osep) then
-          call ga_add(1d0,g_dens(1),-2d0,g_dens(2),g_dens(2))
-        endif
-      endif
+      return
+      end
+
+
+
+      subroutine grad1_dftplusu(rtdb, geom, basis, nat, g_wdens, force, 
+     $                          max_at_bf, nproc, oskel,
+     $                          wdens, H, lbuf, scr, lscr)
+      implicit none
+      integer rtdb, g_wdens, nat, lbuf, lscr
+      integer basis, geom, nproc, max_at_bf
+      double precision force(3,nat), wdens(max_at_bf,max_at_bf)
+      double precision H(*), scr(*)
+      logical oskel
+
+#include "mafdecls.fh"
+#include "global.fh"
+#include "geom.fh"
+#include "bas.fh"
+#include "rtdb.fh"
+#include "sym.fh"
+#include "msgids.fh"
+
+      integer ijatom, next, iat1, iat2, iat3, ish1, ish2,
+     $     iab1f, iab1l, iab2f, iab2l, iac1f, iac1l, iac2f, iac2l,
+     $     if1, il1, if2, il2,
+     $     icart, ic, nint, ip1, ip2
+
+      double precision crd1, crd2 ! atomic coordinates
+      dimension crd1(3), crd2(3)
+
+      integer idatom
+      dimension idatom(2)
+
+      double precision dE, dx, dy, dz, qfac, fact, q1, q2
+
+      logical status, pointforce,dobq
+
+      character*16 name
+
+      integer nxtask, task_size
+      external nxtask
+
+      task_size = 1
+      call hf_print_set(1)
+
+      ijatom = -1
+      next = nxtask(nproc,task_size)
+      do 90, iat1 = 1, nat
+        do 80, iat2 = 1, iat1
+
+          ijatom = ijatom + 1
+          if ( ijatom .eq. next ) then
+
+            status = bas_ce2bfr(basis,iat1,iab1f,iab1l)
+            status = bas_ce2bfr(basis,iat2,iab2f,iab2l)
+
+            if (iab1f.le.0 .or. iab2f.le.0) then
+c     
+c     At least one center has no functions on it ... next atom
+c
+              goto 1010
+            endif
+
+            if (oskel) then
+               if (.not. sym_atom_pair(geom, iat1, iat2, qfac))
+     $              goto 1010
+            else
+               qfac = 1.0d0
+            endif
+
+            status = bas_ce2cnr(basis,iat1,iac1f,iac1l)
+            status = bas_ce2cnr(basis,iat2,iac2f,iac2l)
+
+            call ga_get(g_wdens,iab1f,iab1l,iab2f,iab2l,wdens,max_at_bf)
+c
+            do 70, ish1 = iac1f, iac1l
+              if ( iat1.eq.iat2 ) iac2l = ish1
+              do 60, ish2 = iac2f, iac2l
+
+C               shell block in atomic (D/Dw)-matrix block
+                status = bas_cn2bfr(basis,ish1,if1,il1)
+                if1 = if1 - iab1f + 1
+                il1 = il1 - iab1f + 1
+                status = bas_cn2bfr(basis,ish2,if2,il2)
+                if2 = if2 - iab2f + 1
+                il2 = il2 - iab2f + 1
+
+                nint = ( il1 - if1 + 1 ) * ( il2 - if2 + 1 )
+
+C               overlap derivatives
+                call intd_1eov(basis,ish1,basis,ish2,lscr,scr,
+     &               lbuf,H,idatom)
+
+C     Dw x S
+
+                if ( idatom(1) .ge. 1 ) then
+C               idatom(1).ge.0 <=> idatom(2).ge.0 (no check necessary)
+                  ic = 1
+                  do 28, icart = 1, 3
+                    de = 0.D0
+                    do 22, ip1 = if1, il1
+                      do 20, ip2 = if2, il2
+                        dE = dE + wdens(ip1,ip2) * H(ic)
+                        ic = ic + 1
+ 20                   continue
+ 22                 continue
+                    dE = dE * qfac
+                    force(icart,idatom(1)) = force(icart,idatom(1)) 
+     $                                      - dE - dE
+                    force(icart,idatom(2)) = force(icart,idatom(2)) 
+     $                                      + dE + dE
+ 28               continue
+                endif
+
+ 60           continue
+ 70         continue
+
+ 1010       continue
+
+            next = nxtask(nproc,task_size)
+          endif
+
+ 80     continue
+ 90   continue
+      next = nxtask(-nproc,task_size)
+
+      call ga_dgop(msg_grad_xc, force,  3*nat, '+')
 
       end subroutine

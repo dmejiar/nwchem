@@ -78,8 +78,8 @@ c     integer noc(2)
      $     l_buf, k_buf, l_scr, k_scr, l_wdens, k_wdens, 
      $     l_cdcoef, i_cdcoef, ippp, isvec, lsvec,
      $     ilo, ihi, 
-     $     k_frc_2el, k_frc_xc, 
-     $     l_frc_2el, l_frc_xc
+     $     k_frc_2el, k_frc_xc, k_frc_u,
+     $     l_frc_2el, l_frc_xc, l_frc_u 
       integer lcntoce, icntoce, lcntobfr, icntobfr,
      $     lcetobfr, icetobfr, lrdens_atom, irdens_atom,
      $     nscr, lscr, iscr
@@ -106,6 +106,8 @@ c
 c     
       logical has_frac_occ
       external has_frac_occ
+
+      integer g_wdens
 c
       nproc = ga_nnodes()
       me=ga_nodeid()
@@ -203,6 +205,10 @@ c
       if (.not.ma_alloc_get(mt_dbl,lforce,'forces',l_frc_xc,k_frc_xc))
      $     call errquit('could not allocate l_frc_xc',1, MA_ERR)
       call dfill(lforce, 0.0d0, dbl_mb(k_frc_xc), 1)
+
+      if (.not.ma_alloc_get(mt_dbl,lforce,'forces',l_frc_u,k_frc_u))
+     $     call errquit('could not allocate l_frc_u',1,MA_ERR)
+      call dfill(lforce, 0.0d0, dbl_mb(k_frc_u), 1)
 c     
 c     eigenvalues
 c     
@@ -497,6 +503,39 @@ c
       else
         i_cdcoef = 1
       endif  ! cdfit
+
+c
+c     get DFT+U contribution to gradient
+c
+      
+      if (dftplusu) then
+
+        lsqa = max_at_bf * max_at_bf
+        call int_mem(max1e, max2e, mscratch_1e, mscratch_2e)
+        call int_mem_2e3c(max2e3c, mscratch_2e3c)
+        lbuf = max(max1e, max2e)
+        lbuf = max(lbuf, max2e3c) + 500
+        lscratch = max(mscratch_1e, mscratch_2e)
+        lscratch = max(lscratch, mscratch_2e3c)
+        if (.not. ma_push_get(mt_dbl, lsqa, 'local_w_density', 
+     $     l_wdens, k_wdens))
+     $       call errquit('could not allocate l_dens',1,MA_ERR)
+        if (.not. ma_push_get(mt_dbl,lbuf,'deriv buffer',l_buf,k_buf))
+     $       call errquit('could not allocate buffer',lbuf,MA_ERR)
+        if (.not. ma_push_get(mt_dbl,lscratch,'scratch',l_scr,k_scr))
+     $       call errquit('scratch alloc failed',lscratch,MA_ERR)
+
+        call grad_dftplusu(rtdb, iga_dens, g_wdens)
+        call grad1_dftplusu(rtdb, geom, ao_bas_han, nat, g_wdens, 
+     $              dbl_mb(k_frc_u), max_at_bf, nproc, oskel,
+     $              dbl_mb(k_wdens), dbl_mb(k_buf), lbuf, dbl_mb(k_scr),
+     $              lscratch)
+
+         if (.not.ga_destroy(g_wdens))
+     $     call errquit('dft_gradient: cannot destroy GA',0, GA_ERR)
+         if (.not.ma_chop_stack(l_wdens))
+     $     call errquit('dft_gradient: cannot chop stack',0, MA_ERR)
+      endif
 c     
 c     get exchange-correlation contribution to the gradient
 c     
@@ -565,7 +604,8 @@ c
       if (ga_nodeid() .eq. 0)then
          status = rtdb_parallel (.false.)
          do i = 0, lforce-1
-          dbl_mb(k_force+i) = dbl_mb(k_frc_2el+i) + dbl_mb(k_frc_xc+i) 
+          dbl_mb(k_force+i) = dbl_mb(k_frc_2el+i) + dbl_mb(k_frc_xc+i) +
+     $                        dbl_mb(k_frc_u+i)     
          enddo
          if (.not. rtdb_put(rtdb, 'dft:cd+xc gradient', mt_dbl,
      $        lforce, dbl_mb(k_force))) call errquit
@@ -698,6 +738,7 @@ c
 c!!! BGJ test !!!
 c
       status = ma_free_heap (l_act)
+      status = ma_free_heap (l_frc_u)
       status = ma_free_heap (l_frc_xc)
       status = ma_free_heap (l_frc_2el)
       status = ma_free_heap (l_force)

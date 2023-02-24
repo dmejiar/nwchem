@@ -2,10 +2,10 @@
 
 HEADERS = dftplusu.fh
 
-OBJ = dftplusu_hamiltonian.o dftplusu_end.o grad_dftplusu.o
-OBJ_OPTIMIZE = dftplusu_init.o
+OBJ = dftplusu_hamiltonian.o dftplusu_end.o grad_dftplusu.o dftplusu_init.o
+OBJ_OPTIMIZE = 
 
-USES_BLAS = dftplusu_init.F
+USES_BLAS =
 
 LIBRARY = libnwdft.a
 
