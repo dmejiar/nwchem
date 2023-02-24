@@ -669,7 +669,7 @@ c     Clean up time propagation arrays
      &   (pname//'Could not destroy g_ddotE', 0, GA_ERR)
       end if
 c
-      if (dftplusu) call dftplusu_end()
+      if (dftplusu) call dftplusu_end(rtdb)
 
       if (.not.ma_chop_stack(lsvals))
      &  call errquit(pname//'Cannot chop stack lsvals', 12, MA_ERR)

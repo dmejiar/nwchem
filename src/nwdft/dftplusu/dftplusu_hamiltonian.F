@@ -25,12 +25,20 @@
       
       energy = 0d0
       factor = 0.5d0*ipol
+      plusuiter = plusuiter + 1
+
+      if (response) then
+        if (plusuiter.eq.1) occs(1,1:nvals) = 0
+        if (plusuiter.eq.2) occs(2,1:nvals) = 0
+        occs(3,1:nvals) = 0
+      endif
 
       do isp=1,ipol
         do ival=1,nvals
           if (mullpop) then
             call ga_copy(g_spps(ival),g_tmp1)
             call ga_symmetrize(g_tmp1)
+
             occ1 = ga_ddot(g_dens(isp),g_spps(ival))
             call ga_add(0.5d0*uvals(ival),g_tmp1,1d0,g_fock(isp),
      $                  g_fock(isp))
@@ -38,6 +46,16 @@
             occ1 = ga_ddot(g_dens(isp),g_spps(ival))
             call ga_add(0.5d0*uvals(ival),g_spps(ival),1d0,g_fock(isp),
      $                  g_fock(isp))
+          endif
+          if (response) then
+            if (plusuiter.eq.1) then
+              occs(1,ival) = occs(1,ival) + occ1
+            elseif (plusuiter.eq.2) then
+              occs(2,ival) = occs(2,ival) + occ1
+            endif
+            occs(3,ival) = occs(3,ival) + occ1
+            energy = energy + 0.5d0*uvals(ival)*occ1
+            cycle
           endif
           !write(*,*) occ1
 

@@ -20,7 +20,11 @@
       integer basis,nshl,ibf
       integer ilo,ihi,jlo,jhi
       logical status
+      double precision ddummy
 
+
+      if(.not.rtdb_get(rtdb,"dft:plusu:response",mt_log,1,response))
+     $  call errquit("dftplusu_init: rtdb_get failed",0,RTDB_ERR)
 
       if(.not.rtdb_get(rtdb,"dft:plusu:nvals",mt_int,1,nvals))
      $  call errquit("dftplusu_init: rtdb_get failed",0,RTDB_ERR)
@@ -40,6 +44,9 @@
      $    call errquit("dftplus_init: ga_create failed",0,GA_ERR)
         call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,1d0,g_sm12,g_s,
      $                 0d0,g_sp12)   
+      endif
+      if (response) then
+        plusuiter = 0
       endif
 
 

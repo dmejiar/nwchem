@@ -13,27 +13,29 @@
 c     Parse DFT+U input
 c
       integer num_dirs, ind, uvals, avals, lvals
-      parameter(num_dirs=4)
+      parameter(num_dirs=5)
       character*10 dirs(num_dirs)
 
       integer max_atoms
       parameter(max_atoms=10)
 
       integer atoms(max_atoms), shells(max_atoms)
-      double precision ueff(max_atoms)
+      double precision ueff(max_atoms),fdstep
 
       double precision ddummy
       integer idummy
 
       character*255 test
       logical mullpop
+      logical response
 
-      data dirs /'ueff','atoms','lvals','pop'/
+      data dirs /'ueff','atoms','lvals','pop','response'/
 
       uvals = 0
       avals = 0
       lvals = 0
       mullpop = .false.
+      response = .false.
 
    10 if(.not.inp_a(test)) goto 1999
 
@@ -41,7 +43,7 @@ c
          call errquit("dftplusu_inp: unknown directive",0,INPUT_ERR)
       endif
 
-      goto (1000,2000,3000,4000) ind
+      goto (1000,2000,3000,4000,5000) ind
       call errquit('dftplusu_inp: unknown directive',ind,INPUT_ERR)
       
 c     Effective Hubbard U values
@@ -90,6 +92,11 @@ c     Population method
      $                INPUT_ERR)   
       endif
       goto 10
+c
+c     Linear reponse determination of U
+ 5000 continue
+      response = .true.
+      goto 10
       
 c     END
  1999 continue
@@ -101,6 +108,8 @@ c     END
       
       if(uvals.eq.0) return
 
+      if(.not.rtdb_put(rtdb,'dft:plusu:response',mt_log,1,response))
+     $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
       if(.not.rtdb_put(rtdb,'dft:plusu:nvals',mt_int,1,uvals))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
       if(.not.rtdb_put(rtdb,"dft:plusu:uvals",mt_dbl,uvals,ueff))
