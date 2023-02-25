@@ -2,9 +2,9 @@
 	 parameter(maxvals=10)
 	 logical mullpop,response
 	 integer nvals,lvals(maxvals),atoms(maxvals),g_spps(maxvals)
-	 integer plusuiter
+	 integer plusuiter,g_upot0(2)
          double precision uvals(maxvals),edftplusu
-	 double precision occs(3,maxvals)
-	 common /ddftu/ uvals,edftplusu,occs
-	 common /idftu/ atoms,lvals,nvals,g_spps,plusuiter
+	 double precision occs(3,maxvals),fdstep(maxvals)
+	 common /ddftu/ uvals,edftplusu,occs,fdstep
+	 common /idftu/ atoms,lvals,nvals,g_spps,plusuiter,g_upot0
 	 common /ldftu/ mullpop,response

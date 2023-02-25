@@ -14,7 +14,7 @@
 #include "cdft.fh"
 #include "dftplusu.fh"
 
-      integer g_ppt,g_tmp1
+      integer g_ppt,g_tmp1,isp
       integer ival,iat,ish,iacf,iacl
       integer ifirst,ilast,ityp,ngen,sphcart,nprim
       integer basis,nshl,ibf
@@ -22,10 +22,10 @@
       logical status
       double precision ddummy
 
+      plusuiter = 0
 
       if(.not.rtdb_get(rtdb,"dft:plusu:response",mt_log,1,response))
      $  call errquit("dftplusu_init: rtdb_get failed",0,RTDB_ERR)
-
       if(.not.rtdb_get(rtdb,"dft:plusu:nvals",mt_int,1,nvals))
      $  call errquit("dftplusu_init: rtdb_get failed",0,RTDB_ERR)
       if(.not.rtdb_get(rtdb,"dft:plusu:mullpop",mt_log,1,mullpop))
@@ -36,17 +36,27 @@
      $  call errquit("dftplusu_init: rtdb_get failed",0,RTDB_ERR)
       if(.not.rtdb_get(rtdb,"dft:plusu:uvals",mt_dbl,nvals,uvals))
      $  call errquit("dftplusu_init: rtdb_get failed",0,RTDB_ERR)
+      if(.not.rtdb_get(rtdb,"dft:plusu:fdstep",mt_dbl,nvals,fdstep))
+     $  call errquit("dftplusu_init: rtdb_get failed",0,RTDB_ERR)
+
       if(.not.ga_create(mt_dbl,nbf_ao,nbf_ao,"ppt",0,0,g_ppt))
      $  call errquit("dftplus_init: ga_create failed",0,GA_ERR)
       call ga_distribution(g_ppt,ga_nodeid(),ilo,ihi,jlo,jhi)
+
       if (.not.mullpop) then
         if(.not.ga_create(mt_dbl,nbf_ao,nbf_ao,"tmp1",0,0,g_tmp1))
      $    call errquit("dftplus_init: ga_create failed",0,GA_ERR)
-        call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,1d0,g_sm12,g_s,
-     $                 0d0,g_sp12)   
+          call ga_dgemm('n','n',nbf_ao,nbf_ao,nbf_ao,1d0,g_sm12,g_s,
+     $                   0d0,g_sp12)   
       endif
+
       if (response) then
-        plusuiter = 0
+        do isp=1,ipol
+          if(.not.ga_create(mt_dbl,nbf_ao,nbf_ao,"Upot0",0,0,
+     $                      g_upot0(isp)))
+     $    call errquit("dftplus_init: ga_create failed",0,GA_ERR)
+          call ga_zero(g_upot0(isp))
+        enddo
       endif
 
 

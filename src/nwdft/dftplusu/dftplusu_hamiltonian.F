@@ -11,7 +11,7 @@
 #include "mafdecls.fh"
 
       double precision occ1,occ2,factor
-      integer g_tmp1,g_tmp2,g_tmp3,isp,ival
+      integer g_tmp1,g_tmp2,isp,ival
       logical status
       integer nprim,ityp,ngen,iat,iacf,iacl,iabf,iabl,ibf,ish
       integer ifirst,ilast,sphcart
@@ -20,66 +20,58 @@
      $    call errquit("dftplusu_hamiltonian",0,GA_ERR)   
       if(.not.ga_create(mt_dbl,nbf_ao,nbf_ao,"noccup",0,0,g_tmp2))
      $    call errquit("dftplusu_hamiltonian",0,GA_ERR)   
-      if(.not.ga_create(mt_dbl,nbf_ao,nbf_ao,"noccup",0,0,g_tmp3))
-     $    call errquit("dftplusu_hamiltonian",0,GA_ERR)   
       
       energy = 0d0
       factor = 0.5d0*ipol
       plusuiter = plusuiter + 1
 
       if (response) then
-        if (plusuiter.eq.1) occs(1,1:nvals) = 0
-        if (plusuiter.eq.2) occs(2,1:nvals) = 0
+        if (plusuiter.le.1) occs(1,1:nvals) = 0
+        if (plusuiter.le.2) occs(2,1:nvals) = 0
         occs(3,1:nvals) = 0
       endif
 
       do isp=1,ipol
         do ival=1,nvals
-          if (mullpop) then
-            call ga_copy(g_spps(ival),g_tmp1)
-            call ga_symmetrize(g_tmp1)
+          call ga_copy(g_spps(ival),g_tmp1)
+          if (mullpop) call ga_symmetrize(g_tmp1)
+          occ1 = ga_ddot(g_dens(isp),g_spps(ival))
+          call ga_add(0.5d0*uvals(ival),g_tmp1,1d0,g_fock(isp),
+     $                g_fock(isp))
 
-            occ1 = ga_ddot(g_dens(isp),g_spps(ival))
-            call ga_add(0.5d0*uvals(ival),g_tmp1,1d0,g_fock(isp),
-     $                  g_fock(isp))
-          else
-            occ1 = ga_ddot(g_dens(isp),g_spps(ival))
-            call ga_add(0.5d0*uvals(ival),g_spps(ival),1d0,g_fock(isp),
-     $                  g_fock(isp))
-          endif
           if (response) then
+            call ga_add(fdstep(ival),g_tmp1,1d0,g_fock(isp),
+     $                  g_fock(isp))
+
             if (plusuiter.eq.1) then
               occs(1,ival) = occs(1,ival) + occ1
             elseif (plusuiter.eq.2) then
               occs(2,ival) = occs(2,ival) + occ1
             endif
             occs(3,ival) = occs(3,ival) + occ1
-            energy = energy + 0.5d0*uvals(ival)*occ1
-            cycle
+            energy = energy + 0.5d0*fdstep(ival)*occ1
+            
+            if(plusuiter.gt.1) then
+              call ga_add(1d0,g_upot0(isp),1d0,g_fock(isp),g_fock(isp))
+              energy = energy + 0.5d0*uvals(ival)*occ1 + 
+     $                 0.5d0*ga_ddot(g_upot0(isp),g_dens(isp))
+              cycle
+            endif
           endif
           !write(*,*) occ1
 
-          if (mullpop) then
-            call ga_dgemm("n","n",nbf_ao,nbf_ao,nbf_ao,1d0,g_spps(ival),
-     $                    g_dens(isp),0d0,g_tmp2)
-            call ga_dgemm("n","n",nbf_ao,nbf_ao,nbf_ao,1d0,g_tmp2,
-     $                   g_spps(ival),0d0,g_tmp3)
-            occ2 = factor*ga_ddot(g_dens(isp),g_tmp3)
-            call ga_scale(g_tmp3,2d0)
-            call ga_symmetrize(g_tmp3)
-            call ga_add(-0.5d0*uvals(ival),g_tmp3,1d0,g_fock(isp),
-     $                  g_fock(isp))
-
-          else
-            call ga_dgemm("n","n",nbf_ao,nbf_ao,nbf_ao,1d0,g_dens(isp),
-     $                     g_spps(ival),0d0,g_tmp1)
-            call ga_dgemm("n","n",nbf_ao,nbf_ao,nbf_ao,1d0,g_spps(ival),
-     $                     g_tmp1,0d0,g_tmp2)
-            call ga_add(-uvals(ival),g_tmp2,1d0,g_fock(isp),
-     $                g_fock(isp))
-            occ2 = factor*ga_ddot(g_dens(isp),g_tmp2)
-          endif
+          call ga_dgemm("n","n",nbf_ao,nbf_ao,nbf_ao,1d0,g_dens(isp),
+     $                   g_spps(ival),0d0,g_tmp1)
+          call ga_dgemm("n","n",nbf_ao,nbf_ao,nbf_ao,1d0,g_spps(ival),
+     $                   g_tmp1,0d0,g_tmp2)
+          if (mullpop) call ga_symmetrize(g_tmp2)
+          call ga_add(-uvals(ival),g_tmp2,1d0,g_fock(isp),g_fock(isp))
+          occ2 = factor*ga_ddot(g_dens(isp),g_tmp2)
           !write(*,*) occ2
+          if (response) then
+            call ga_add(-uvals(ival),g_tmp2,1d0,g_upot0(isp),
+     $                   g_upot0(isp))
+          endif
           energy = energy + 0.5d0*uvals(ival)*(occ1 - occ2)
         enddo
       enddo
@@ -88,8 +80,6 @@
       if(.not.ga_destroy(g_tmp1))
      $  call errquit("dftplusu_hamiltonian",0,GA_ERR) 
       if(.not.ga_destroy(g_tmp2))
-     $  call errquit("dftplusu_hamiltonian",0,GA_ERR)
-      if(.not.ga_destroy(g_tmp3))
      $  call errquit("dftplusu_hamiltonian",0,GA_ERR)
 
       end

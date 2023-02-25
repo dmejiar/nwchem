@@ -7,12 +7,13 @@
 #include "geom.fh"
 #include "cdft.fh"
 #include "stdio.fh"
+#include "util_params.fh"
       integer rtdb
       character*(*) module
 
 c     Parse DFT+U input
 c
-      integer num_dirs, ind, uvals, avals, lvals
+      integer num_dirs, ind, uvals, avals, lvals, fdvals, nvals
       parameter(num_dirs=5)
       character*10 dirs(num_dirs)
 
@@ -20,7 +21,7 @@ c
       parameter(max_atoms=10)
 
       integer atoms(max_atoms), shells(max_atoms)
-      double precision ueff(max_atoms),fdstep
+      double precision ueff(max_atoms),fdstep(max_atoms)
 
       double precision ddummy
       integer idummy
@@ -34,8 +35,12 @@ c
       uvals = 0
       avals = 0
       lvals = 0
+      fdvals = 0
       mullpop = .false.
       response = .false.
+
+      ueff(:) = 0d0
+      fdstep(:) = 0d0
 
    10 if(.not.inp_a(test)) goto 1999
 
@@ -54,7 +59,7 @@ c     Effective Hubbard U values
         goto 10
       endif
       uvals = uvals + 1
-      ueff(uvals) = ddummy/27.2114d0
+      ueff(uvals) = ddummy/cau2ev
       goto 1000
 
 c     Atoms to apply U
@@ -96,29 +101,47 @@ c
 c     Linear reponse determination of U
  5000 continue
       response = .true.
-      goto 10
+      if(.not.inp_f(ddummy)) then
+        if (fdvals.eq.0)
+     $    call errquit("dftplus_inp: No FD step size found",0,INPUT_ERR)
+        goto 10
+      endif
+      fdvals = fdvals + 1
+      fdstep(fdvals) = ddummy/cau2ev
+      goto 5000
       
 c     END
  1999 continue
 
-      if (uvals.ne.avals)
+      nvals = max(uvals,fdvals)
+
+      if (.not.response) then
+       if (uvals.ne.avals)
      $ call errquit("dftplusu_inp: Ueff and Atoms mismatch",0,INPUT_ERR)
-      if (uvals.ne.lvals)
+       if (uvals.ne.lvals)
      $ call errquit("dftplusu_inp: Ueff and Lvals mismatch",0,INPUT_ERR)
+      else
+       if (avals.ne.fdvals)
+     $ call errquit("dftplusu_inp: FD and Atoms mismatch",0,INPUT_ERR)
+       if (lvals.ne.fdvals)
+     $ call errquit("dftplusu_inp: FD and Lvals mismatch",0,INPUT_ERR)
+      endif
       
-      if(uvals.eq.0) return
 
       if(.not.rtdb_put(rtdb,'dft:plusu:response',mt_log,1,response))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
-      if(.not.rtdb_put(rtdb,'dft:plusu:nvals',mt_int,1,uvals))
+      if(.not.rtdb_put(rtdb,'dft:plusu:nvals',mt_int,1,nvals))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
-      if(.not.rtdb_put(rtdb,"dft:plusu:uvals",mt_dbl,uvals,ueff))
+      if(.not.rtdb_put(rtdb,"dft:plusu:uvals",mt_dbl,nvals,ueff))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
-      if(.not.rtdb_put(rtdb,"dft:plusu:atoms",mt_int,uvals,atoms))
+      if(.not.rtdb_put(rtdb,"dft:plusu:atoms",mt_int,nvals,atoms))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
-      if(.not.rtdb_put(rtdb,"dft:plusu:lvals",mt_int,uvals,shells))
+      if(.not.rtdb_put(rtdb,"dft:plusu:lvals",mt_int,nvals,shells))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
       if(.not.rtdb_put(rtdb,"dft:plusu:mullpop",mt_log,1,mullpop))
+     $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
+
+      if(.not.rtdb_put(rtdb,"dft:plusu:fdstep",mt_dbl,nvals,fdstep))
      $  call errquit("dftplusu_inp: rtdb_put failed",0,RTDB_ERR)
 
       return
