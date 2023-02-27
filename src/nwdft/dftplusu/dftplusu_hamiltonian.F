@@ -49,12 +49,10 @@
               occs(2,ival) = occs(2,ival) + occ1
             endif
             occs(3,ival) = occs(3,ival) + occ1
-            energy = energy + 0.5d0*fdstep(ival)*occ1
+            energy = energy + fdstep(ival)*occ1
             
             if(plusuiter.gt.1) then
-              call ga_add(1d0,g_upot0(isp),1d0,g_fock(isp),g_fock(isp))
-              energy = energy + 0.5d0*uvals(ival)*occ1 + 
-     $                 0.5d0*ga_ddot(g_upot0(isp),g_dens(isp))
+              energy = energy + 0.5d0*uvals(ival)*occ1
               cycle
             endif
           endif
@@ -74,6 +72,10 @@
           endif
           energy = energy + 0.5d0*uvals(ival)*(occ1 - occ2)
         enddo
+        if (response.and.plusuiter.gt.1) then
+          call ga_add(1d0,g_upot0(isp),1d0,g_fock(isp),g_fock(isp))
+          energy = energy + 0.5d0*ga_ddot(g_upot0(isp),g_dens(isp))
+        endif
       enddo
       edftplusu = energy
 
