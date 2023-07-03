@@ -30,6 +30,12 @@
 # A subdirectory of the current directory named scratchdir is deleted
 # and remade for each calculation, and deleted at job end.
 export HYDRA_DEBUG=0
+# find memory leaks using  this glibc feature that
+# initialized memory blocks to non-zero values
+if [[ -z "${USE_ASAN}" ]]; then
+    export MALLOC_PERTURB_=$(($RANDOM % 255 + 1))
+fi    
+
 if [[ -z "${NWCHEM_TARGET}" ]]; then
     UNAME_S=$(uname -s)
   if [[ ${UNAME_S} == Linux ]]; then
@@ -97,7 +103,7 @@ done
  CURDIR=$(pwd)
 
  # Figure out where the executable is.
-if [[ $(echo $NWCHEM_EXECUTABLE|cut -c 1-11) == 'singularity' ]] || [[ -f $NWCHEM_EXECUTABLE ]]; then
+if [[ $(echo $NWCHEM_EXECUTABLE|cut -c 1-11) == 'singularity' ]] || [[ $(echo $NWCHEM_EXECUTABLE|cut -c 1-9) == 'apptainer' ]] || [[ -f $NWCHEM_EXECUTABLE ]]; then
   NWCHEM=$NWCHEM_EXECUTABLE
 else
   NWCHEM=${NWCHEM_PROJ_PATH}/nwchem
@@ -219,6 +225,7 @@ do
   echo "     copying input and verified output files"
 
    OUTPUTFILE=${STUB}.out
+   ERRORFILE=${STUB}.err
    INPUTFILE=${STUB}.nw
 
 #
@@ -348,17 +355,17 @@ sync
     if [ $NPROC -gt 0 ]; then
       if [ $NONSTD_MPI -ne 0 ]; then
       if [ -z $USE_SLEEPLOOP ]; then
-          ${MPIRUN} ${NWCHEM} ${INPUTFILE} >& ${OUTPUTFILE}
+          ${MPIRUN} ${NWCHEM} ${INPUTFILE} 2> ${ERRORFILE} 1> ${OUTPUTFILE}
 	else
-          ${NWCHEM_TOP}/QA/sleep_loopqa.sh        $MPIRUN $NPOPT $NPROC $NWCHEM $INPUTFILE  $OUTPUTFILE
+          ${NWCHEM_TOP}/QA/sleep_loopqa.sh        $MPIRUN $NPOPT $NPROC $NWCHEM $INPUTFILE 2> $ERRORFILE 1> $OUTPUTFILE
 	fi
         runstatus=$?
       else
-        $MPIRUN $NPOPT $NPROC $NWCHEM $INPUTFILE >& $OUTPUTFILE
+          $MPIRUN $NPOPT $NPROC $NWCHEM $INPUTFILE 2> $ERRORFILE 1> $OUTPUTFILE
         runstatus=$?
       fi
     else
-       $NWCHEM $INPUTFILE >& $OUTPUTFILE
+       $NWCHEM $INPUTFILE 2> $ERRORFILE 1> $OUTPUTFILE
        runstatus=$?
     fi
     [ -f $OUTPUTFILE ] && cp $OUTPUTFILE $TESTOUTPUTS/$OUTPUTFILE
@@ -387,19 +394,19 @@ sync
 #       know what we are doing (i.e. above this script) and simply use that
 #       verbatim. Set MPIRUN_PATH for this purpose, its value is transfered 
 #       to MPIRUN at some point in this script.
-        $MPIRUN $NWCHEM $INPUTFILE >& $TESTOUTPUTS/$OUTPUTFILE
+        $MPIRUN $NWCHEM $INPUTFILE  2> $TESTOUTPUTS/$ERRORFILE 1> $TESTOUTPUTS/$OUTPUTFILE
         runstatus=$?
       else
 #       In the case of standard MPI we construct the appropriate command here.
       if [ -z $USE_SLEEPLOOP ]; then
-        $MPIRUN $NPOPT $NPROC $NWCHEM $INPUTFILE >& ${TESTOUTPUTS}/${OUTPUTFILE}
+        $MPIRUN $NPOPT $NPROC $NWCHEM $INPUTFILE 2> ${TESTOUTPUTS}/${ERRORFILE} 1> ${TESTOUTPUTS}/${OUTPUTFILE}
       else
-          ${NWCHEM_TOP}/QA/sleep_loopqa.sh        $MPIRUN $NPOPT $NPROC $NWCHEM $INPUTFILE  $OUTPUTFILE
+          ${NWCHEM_TOP}/QA/sleep_loopqa.sh        $MPIRUN $NPOPT $NPROC $NWCHEM $INPUTFILE  2> $ERRORFILE 1> $OUTPUTFILE
       fi
         runstatus=$?
       fi
     else
-      $NWCHEM $INPUTFILE >& $TESTOUTPUTS/$OUTPUTFILE
+      $NWCHEM $INPUTFILE 2> $TESTOUTPUTS/$ERRORFILE 1> $TESTOUTPUTS/$OUTPUTFILE
        runstatus=$?
     fi
 #
@@ -407,7 +414,7 @@ sync
 #
   if [ $runstatus -ne 0 ]; then
     echo "     NWChem execution failed"
-    overall_status=1
+    let "overall_status+=1"
     tail -50 $TESTOUTPUTS/$OUTPUTFILE
     continue
   fi
@@ -460,6 +467,7 @@ sync
 
     diff -w ${STUB}.ok.out.nwparse ${STUB}.out.nwparse >& /dev/null
     diff1status=$?
+    cat ${ERRORFILE}
 #
   fi
 #
@@ -472,7 +480,7 @@ sync
 #    head -1000 ${STUB}.out
 #    echo "@@@     Paste End of Output File"  
 #    tail -1000 ${STUB}.out
-    overall_status=1
+    let "overall_status+=1"
     continue 
   else
 #
@@ -493,7 +501,7 @@ sync
     espstatus=$?
        if [[ $espstatus -ne 0 ]]; then
          echo "ESP comparison failed"
-         overall_status=1
+         let "overall_status+=1"
 	 diff -u esp_temp.ok.q esp_temp.q 
          continue 
        else
@@ -508,7 +516,7 @@ sync
        diff -w ${STUB}.ok.tst ${STUB}.tst >& /dev/null
        if [ $? -ne 0 ]; then
          echo "failed"
-         overall_status=1
+         let "overall_status+=1"
          continue 
        else
          echo "completed"
@@ -521,7 +529,7 @@ sync
         echo "completed "
        else
         echo "failed"
-        overall_status=1
+        let "overall_status+=1"
         continue 
        fi
       fi
