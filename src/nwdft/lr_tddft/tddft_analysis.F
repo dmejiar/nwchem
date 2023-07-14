@@ -791,7 +791,7 @@ c
           enddo
           endif ! nov(i) check
         enddo
-        if (pol.lt.1) then
+        if (pol.gt.0) then
            jsym=ieor(isym-1,int_mb(k_irs(pol)+occ-1)-1)+1
            jsym=ieor(jsym-1,int_mb(k_irs(pol)+vir-1)-1)+1
            call sym_irrepname(geom,jsym,oname)
@@ -1645,6 +1645,7 @@ c       Clean scratch space
         if (nodezero) call util_flush(LuOut)
 c
         endif  ! gmh
+
 c
       enddo   ! outer loop over roots
 c
