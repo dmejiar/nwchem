@@ -93,6 +93,7 @@ c
      $                 pars%g_movecs(isp),pars%g_movecs(isp),0d0,
      $                 g_dens(isp))
         if (odftps) call pstat_off(ps_dgemm)
+        call ga_symmetrize(g_dens(isp))
       enddo
 c
       nscr = 2*nbf_ao_mxnbf_ce**2
