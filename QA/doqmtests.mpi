@@ -569,6 +569,8 @@ let "myexit+=$?"
 let "myexit+=$?"
 ./runtests.mpi.unix procs $np gw_openshell
 let "myexit+=$?"
+./runtests.mpi.unix procs $np gw_symmetry
+let "myexit+=$?"
 # x2c
 ./runtests.mpi.unix procs $np x2c-h2se
 let "myexit+=$?"
@@ -625,6 +627,17 @@ let "myexit+=$?"
 let "myexit+=$?"
 ./runtests.mpi.unix procs $np back_to_atguess
 let "myexit+=$?"
+./runtests.mpi.unix procs $np chem_library_h4_sto6g_0.000
+let "myexit+=$?"
+# superheavy elements check
+source ./qa_funcs.sh
+strings -a $(get_nwchem_executable) |grep Tennessine >& /dev/null
+exit_code=$?
+if [[ $exit_code == 0 ]]; then
+    echo NWChem code ready for superheavy elements
+    ./runtests.mpi.unix procs $np dft_tennessine
+    let "myexit+=$?"
+fi
 #
 ./runtests.mpi.unix procs $np ccsdt_ompt_w3pvdz
 let "myexit+=$?"
