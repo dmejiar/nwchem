@@ -363,10 +363,9 @@ c
 c     Now have G^-1 in x.  Form G again and then P = (G^-1)G.
 c
       call geom_hnd_get_data('b', y, ncart*nzvar) ! B -> y
-      call dgemm('t', 'n', nzvar, nzvar, ncart, 1d0,  
-     $     y, ncart, y, ncart, 0d0, z, nzvar) ! G = BT.B -> z
-      call dgemm('n', 'n', nzvar, nzvar, nzvar, 1d0, 
-     $     z, nzvar, x, nzvar, 0d0, y, nzvar) ! P = (G^-1)G -> y
+      call dsyrk('u', 't', nzvar, ncart, 1d0, y, ncart, 0d0, z, nzvar)
+      call dsymm('l', 'u', nzvar, nzvar, 1d0, z, nzvar, x, nzvar, 0d0,
+     $            y, nzvar)
       call geom_hnd_put_data('p', y, nzvar*nzvar)
       if (odebug) then
          write(LuOut,*) ' Projector P without constraints'
@@ -460,7 +459,6 @@ c
      $     y, nzvar, z, nzvar, 0d0, x, nzvar) ! C*(CPC)^-1 -> x
       call dgemm('n', 'n', nzvar, nzvar, nzvar, 1d0, 
      $     x, nzvar, y, nzvar, 0d0, z, nzvar) ! C*(CPC)^-1C -> z
-      endif
 c
       call geom_hnd_get_data('p', y, nzvar*nzvar) ! P -> y
       call dgemm('n', 'n', nzvar, nzvar, nzvar, 1d0, 
@@ -478,6 +476,7 @@ c
          call output(y, 1, nzvar, 1, nzvar, nzvar, nzvar, 1)
       endif
       call geom_hnd_put_data('p', y, nzvar*nzvar)
+      endif
 c
       END
       SUBROUTINE HND_BSTR(EQVAL,NOINT,I,J,C,B,NCART,BOHR)

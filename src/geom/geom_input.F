@@ -7007,17 +7007,20 @@ c     quadratically convergent once very large steps have been damped
 c     out ... well this would be true except some torsions and
 c     angles can be very strongly coupled.
 c
+      call geom_bandbi(geom)
+      call geom_hnd_get_data('b^-1', dbl_mb(k_bi), ncart*nzvar)
+      if (.not. geom_cart_coords_get(geom, x))
+     $     call errquit('opt_int_to_cart: geom get/set',0, GEOM_ERR)
+
       do ipass = 1, 5
 c
 c     dq -> dx -> x -> new q
 c
-         call geom_bandbi(geom)
-         call geom_hnd_get_data('b^-1', dbl_mb(k_bi), ncart*nzvar)
+c         call geom_bandbi(geom)
+c         call geom_hnd_get_data('b^-1', dbl_mb(k_bi), ncart*nzvar)
          call dgemv('n', ncart, nzvar, 1d0, dbl_mb(k_bi), ncart,
      $        dq, 1, 0.0d0, dx, 1)
          call sym_grad_symmetrize(geom, dx)
-         if (.not. geom_cart_coords_get(geom, x))
-     $        call errquit('opt_int_to_cart: geom get/set',0, GEOM_ERR)
          xmax = 0d0
          do i = 1, ncart
             xmax = max(xmax, abs(dx(i)))
@@ -7092,14 +7095,15 @@ c
 c
 c     If the iteration did not converge, then repimpose constraints
 c
-      if (err .gt. 1d-6) 
-     $     call geom_impose_constraints(geom,
+      if (err .gt. 1d-6) then
+         call geom_impose_constraints(geom,
      $     geom_impose_constraints_on_q)
+      else
+        call geom_bandbi(geom)
+      endif
 c
  100  if (.not. ma_chop_stack(l_bi))
      $     call errquit('opt_int_to_cart: ma chop', 0, MA_ERR)
-c
-      call geom_bandbi(geom)
 c
       end
       subroutine geom_impose_constraints(geom, impose_constraints)
@@ -7181,6 +7185,8 @@ c
          do i = 1, nzvar
             err = max(err, abs(dq(i)))
          enddo
+         if (err .lt. 1d-6) goto 100
+
          if (err .gt. 0.25d0) then ! Small steps move coupled angles together?
             if (oprint) write(LuOut,*) '   restricting step', err
             call dscal(nzvar, 0.5d0/err, dq, 1)
