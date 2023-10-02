@@ -1428,6 +1428,9 @@ ifeq ($(TARGET),MACX64)
         endif
 
         FOPTIONS += -fpp -g -no-save-temps
+        ifneq ($(V),1)
+           FOPTIONS += -Qoption,fpp,-w0
+	endif
         FDEBUG    = -O2 -g
         FOPTIMIZE = -O3
 
@@ -2383,6 +2386,9 @@ ifneq ($(TARGET),LINUX)
             ifeq ($(_FC),ifxold)
                 DEFINES += -DIFCV8 -DIFCLINUX
                 FOPTIONS += -fpp -align
+                ifneq ($(V),1)
+                    FOPTIONS += -Qoption,fpp,-w0
+		endif
                 FOPTIMIZE = -g -O3 -fimf-arch-consistency=true
                 ifdef USE_I4FLAGS
                 else
@@ -2445,6 +2451,9 @@ ifneq ($(TARGET),LINUX)
                 endif
 
                 FOPTIONS += -align -fpp
+                ifneq ($(V),1)
+                    FOPTIONS += -Qoption,fpp,-w0
+		endif
 
 #               might be not need and the root cause for https://github.com/nwchemgit/nwchem/issues/255
 #               CPP=fpp -P
@@ -2534,7 +2543,7 @@ ifneq ($(TARGET),LINUX)
 #                       FOPTIMIZE += -xHost
                         ifndef USE_IFX
 #                           crazy simd options
-                            ifeq ($(shell $(CNFDIR)/check_env.sh $(USE_HWOPT)),1)
+#                            ifeq ($(shell $(CNFDIR)/check_env.sh $(USE_HWOPT)),1)
                                 ifeq ($(_IFCV17), Y)
                                     ifeq ($(_GOTAVX512F),Y)
                                         FOPTIMIZE += -axCORE-AVX512
@@ -2547,7 +2556,7 @@ ifneq ($(TARGET),LINUX)
                                     else ifeq ($(_GOTSSE3),Y) 
                                         FOPTIMIZE += -axSSE3
                                     endif
-                                endif
+#                                endif
                             endif
                             FOPTIONS += -finline-limit=250
                         endif
@@ -2745,6 +2754,9 @@ ifneq ($(TARGET),LINUX)
             ifeq ($(GNU_GE_4_6),true)
                 ifeq ($(shell $(CNFDIR)/check_env.sh $(USE_HWOPT)),1)
                     FOPTIMIZE +=  -mtune=native
+                endif
+                ifdef GFORTRAN_MARCH
+                    FOPTIMIZE += -march=$(GFORTRAN_MARCH)
                 endif
 #               causes slowdows in mp2/ccsd
 #               FOPTIONS += -finline-functions
@@ -3090,7 +3102,6 @@ ifneq ($(TARGET),LINUX)
 #                DEFINES +=-DUSE_F90_ALLOCATABLE -DUSE_OMP_TEAMS_DISTRIBUTE
             endif
         endif
-		
 
         ifeq ($(NWCHEM_TARGET),CATAMOUNT)
             DEFINES  += -DCATAMOUNT
@@ -3576,10 +3587,10 @@ ifdef USE_MPI
                 endif
                 ifdef MPI_LIB
                     $(info ***warning MPI_LIB ignored since FORCE_MPI_ENV not set***)
- 	        endif
+                endif
                 ifdef MPI_INCLUDE
                     $(info ***warning MPI_INCLUDE ignored since FORCE_MPI_ENV not set***)
- 	        endif
+                endif
 	    endif
 	endif
         # check if mpif90 is present
