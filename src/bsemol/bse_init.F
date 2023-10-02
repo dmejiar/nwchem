@@ -24,7 +24,7 @@
       character(len=255) :: basisname, scftype, gwevals
       integer i, ilo, ihi, j, g_work
       integer nbf_temp, ipol_temp, nocc, nvir, nmo_temp(2)
-      logical ldum
+      logical ldum,skipgw
 
       logical int_normalize, int_norm_2c
       external int_normalize, int_norm_2c
@@ -82,6 +82,9 @@ c
      &    (pars%davidson.and.(pars%analytic.or.pars%lanczos)) .or.
      &    (pars%lanczos.and.(pars%analytic.or.pars%davidson)))
      &  call errquit(pname//'more than one method',4,INPUT_ERR)
+
+      if (.not.rtdb_get(pars%rtdb,'bse:skipgw',mt_log,1,skipgw))
+     &  call errquit(pname//'could not read from rtdb',5,RTDB_ERR)
 
       ! Check wether we are computing singlet or triplet excitations
       if(.not.rtdb_get(pars%rtdb,'bse:singlet',mt_log,1,pars%singlet))
@@ -258,6 +261,10 @@ c
 
       ! Read GW QP energies
       !if (.not.pars%ncap) then
+      if (skipgw) then
+        call dcopy(nbf_ao*pars%ipol,dbl_mb(pars%k_mf_evals),1,
+     &             dbl_mb(pars%k_gw_evals),1)
+      else
         call util_file_name('gwevals',.false.,.false.,gwevals)
         call util_file_name_resolve(gwevals,.false.)
         if (pars%me.eq.0) then
@@ -270,6 +277,7 @@ c
         endif
         call ga_brdcst(mt_dbl,dbl_mb(pars%k_gw_evals),
      &                 ma_sizeof(mt_dbl,nbf_ao*pars%ipol,mt_byte),0)
+      endif
       !endif  
 
       !3-center ERIs 
