@@ -441,113 +441,116 @@ c
       epsdsw=epotsw
       epsds=epots
       eqrs=epot
-      dx=dx0sd
       mdstep=0
       da=0.01
 c
     1 continue
+
+      dx=dx0sd
       call timer_start(201)
 c
       dxf=dx/fmax
 c
       if(nwmloc.gt.0) then
-      do 2 j=1,nwa
-      do 3 i=1,nwmloc
-      yw(i,1,j)=xw(i,1,j)
-      yw(i,2,j)=xw(i,2,j)
-      yw(i,3,j)=xw(i,3,j)
-      vw(i,1,j)=fw(i,1,j)
-      vw(i,2,j)=fw(i,2,j)
-      vw(i,3,j)=fw(i,3,j)
-    3 continue
-      factor=one/ww(j)
-      do 4 i=1,nwmloc
-      if(iand(iwdt(i),mfixed).ne.lfixed) then
-      dxstep=factor*dxf*fw(i,1,j)
-      xw(i,1,j)=xw(i,1,j)+dxstep
-      dxstep=factor*dxf*fw(i,2,j)
-      xw(i,2,j)=xw(i,2,j)+dxstep
-      dxstep=factor*dxf*fw(i,3,j)
-      xw(i,3,j)=xw(i,3,j)+dxstep
-      endif
-    4 continue
-    2 continue
+        do 2 j=1,nwa
+          do 3 i=1,nwmloc
+            yw(i,1,j)=xw(i,1,j)
+            yw(i,2,j)=xw(i,2,j)
+            yw(i,3,j)=xw(i,3,j)
+            vw(i,1,j)=fw(i,1,j)
+            vw(i,2,j)=fw(i,2,j)
+            vw(i,3,j)=fw(i,3,j)
+    3     continue
+          !factor=one/ww(j)
+          factor=one
+          do 4 i=1,nwmloc
+            if(iand(iwdt(i),mfixed).ne.lfixed) then
+              dxstep=factor*dxf*fw(i,1,j)
+              xw(i,1,j)=xw(i,1,j)+dxstep
+              dxstep=factor*dxf*fw(i,2,j)
+              xw(i,2,j)=xw(i,2,j)+dxstep
+              dxstep=factor*dxf*fw(i,3,j)
+              xw(i,3,j)=xw(i,3,j)+dxstep
+            endif
+    4     continue
+    2   continue
       endif
 c
       if(nsaloc.gt.0) then
-      do 5 i=1,nsaloc
-      ys(i,1)=xs(i,1)
-      ys(i,2)=xs(i,2)
-      ys(i,3)=xs(i,3)
-      vs(i,1)=fs(i,1)
-      vs(i,2)=fs(i,2)
-      vs(i,3)=fs(i,3)
-    5 continue
-      if(imembr.eq.0) then
-      do 6 i=1,nsaloc
-      if(iand(isdt(i),mfixed).ne.lfixed) then
-      factor=one/ws(i)
-      dxstep=factor*dxf*fs(i,1)
-      xs(i,1)=xs(i,1)+dxstep
-      dxstep=factor*dxf*fs(i,2)
-      xs(i,2)=xs(i,2)+dxstep
-      dxstep=factor*dxf*fs(i,3)
-      xs(i,3)=xs(i,3)+dxstep
-      endif
-    6 continue
-      else
-      do 16 i=1,msm
-      fm(i,1)=zero
-      fm(i,2)=zero
-      fm(i,3)=zero
-      fm(i,4)=zero
-      fm(i,5)=zero
-      fm(i,6)=zero
-      fm(i,7)=zero
-   16 continue
-      do 17 i=1,nsaloc
-      factor=one/ws(i)
-      fm(mm(i,2),1)=fm(mm(i,2),1)+factor*fs(i,1)
-      fm(mm(i,2),2)=fm(mm(i,2),2)+factor*fs(i,2)
-      fm(mm(i,2),3)=fm(mm(i,2),3)+factor*
-     + ((xs(i,1)-xsm(mm(i,2),1))*fs(i,2)-
-     +  (xs(i,2)-xsm(mm(i,2),2))*fs(i,1))
-   17 continue
-      if(np.gt.1) call ga_dgop(mrg_d50,fm,3*msm,'+')
-      do 18 i=1,nsm
-      fm(i,4)=fm(i,3)
-      write(*,'(a,i5,a,i5)') 'Mol ',i,', Angle ',da*fm(i,4)
-   18 continue
-      do 19 i=1,nsaloc
-      if(iand(isdt(i),mfixed).ne.lfixed) then
+        do 5 i=1,nsaloc
+          ys(i,1)=xs(i,1)
+          ys(i,2)=xs(i,2)
+          ys(i,3)=xs(i,3)
+          vs(i,1)=fs(i,1)
+          vs(i,2)=fs(i,2)
+          vs(i,3)=fs(i,3)
+    5   continue
+        if(imembr.eq.0) then
+          do 6 i=1,nsaloc
+            if(iand(isdt(i),mfixed).ne.lfixed) then
+              !factor=one/ws(i)
+              factor=one
+              dxstep=factor*dxf*fs(i,1)
+              xs(i,1)=xs(i,1)+dxstep
+              dxstep=factor*dxf*fs(i,2)
+              xs(i,2)=xs(i,2)+dxstep
+              dxstep=factor*dxf*fs(i,3)
+              xs(i,3)=xs(i,3)+dxstep
+            endif
+    6     continue
+        else
+          do 16 i=1,msm
+            fm(i,1)=zero
+            fm(i,2)=zero
+            fm(i,3)=zero
+            fm(i,4)=zero
+            fm(i,5)=zero
+            fm(i,6)=zero
+            fm(i,7)=zero
+   16     continue
+          do 17 i=1,nsaloc
+            factor=one/ws(i)
+            fm(mm(i,2),1)=fm(mm(i,2),1)+factor*fs(i,1)
+            fm(mm(i,2),2)=fm(mm(i,2),2)+factor*fs(i,2)
+            fm(mm(i,2),3)=fm(mm(i,2),3)+factor*
+     +         ((xs(i,1)-xsm(mm(i,2),1))*fs(i,2)-
+     +         (xs(i,2)-xsm(mm(i,2),2))*fs(i,1))
+   17     continue
+          if(np.gt.1) call ga_dgop(mrg_d50,fm,3*msm,'+')
+          do 18 i=1,nsm
+            fm(i,4)=fm(i,3)
+            write(*,'(a,i5,a,i5)') 'Mol ',i,', Angle ',da*fm(i,4)
+   18     continue
+          do 19 i=1,nsaloc
+            if(iand(isdt(i),mfixed).ne.lfixed) then
 c
-c     rotations
+c             rotations
 c
-      o(1)=xsm(mm(i,2),1)
-      o(2)=xsm(mm(i,2),1)
-      o(3)=xsm(mm(i,2),1)
-      p(1)=o(1)
-      p(2)=o(2)
-      p(3)=o(3)+1.0d0
-      x(1)=xs(i,1)
-      x(2)=xs(i,2)
-      x(3)=xs(i,3)
-      angle=da*fm(mm(i,2),4)
-      call rotate(o,p,angle,x,y)
-      xs(i,1)=y(1)
-      xs(i,2)=y(2)
-      xs(i,3)=y(3)
+              o(1)=xsm(mm(i,2),1)
+              o(2)=xsm(mm(i,2),1)
+              o(3)=xsm(mm(i,2),1)
+              p(1)=o(1)
+              p(2)=o(2)
+              p(3)=o(3)+1.0d0
+              x(1)=xs(i,1)
+              x(2)=xs(i,2)
+              x(3)=xs(i,3)
+              angle=da*fm(mm(i,2),4)
+              call rotate(o,p,angle,x,y)
+              xs(i,1)=y(1)
+              xs(i,2)=y(2)
+              xs(i,3)=y(3)
 c
-c     translations
+c             translations
 c
-      dxstep=dxf*fm(mm(i,2),1)
-      xs(i,1)=xs(i,1)+dxstep
-      dxstep=dxf*fm(mm(i,2),2)
-      xs(i,2)=xs(i,2)+dxstep
+              dxstep=dxf*fm(mm(i,2),1)
+              xs(i,1)=xs(i,1)+dxstep
+              dxstep=dxf*fm(mm(i,2),2)
+              xs(i,2)=xs(i,2)+dxstep
 c
-      endif
-   19 continue
-      endif
+            endif
+   19     continue
+        endif
       endif
 c
 c     shake
@@ -587,34 +590,35 @@ c     are not preserved in the last md iteration (M.V.)
 c     ------------------------------------------------
       if(ecrit.gt.epsd) then
 c
-      call cf_restor(dbl_mb(i_xw),dbl_mb(i_yw),dbl_mb(i_fw),
-     + dbl_mb(i_vw),nwmloc,dbl_mb(i_xs),dbl_mb(i_ys),dbl_mb(i_fs),
-     + dbl_mb(i_vs),nsaloc)
+        call cf_restor(dbl_mb(i_xw),dbl_mb(i_yw),dbl_mb(i_fw),
+     +     dbl_mb(i_vw),nwmloc,dbl_mb(i_xs),dbl_mb(i_ys),dbl_mb(i_fs),
+     +     dbl_mb(i_vs),nsaloc)
 c
-      if(isdit.lt.msdit.and.dxmax.gt.dxsdmx) then
-      dx=half*dx
-      da=half*da
-      call timer_stop(201)
-      if(dx.gt.dxsdmx) goto 1
-      else
+        if(isdit.lt.msdit.and.dxmax.gt.dxsdmx) then
+          dx0sd=0.7d0*dx0sd
+          da=0.7d0*da
+          call timer_stop(201)
+          if(dx0sd*fmax.gt.dxsdmx) goto 1
+        else
 c
 c       this insures the global restoration of coordinates
 c       so that the right restart file written out
 c       --------------------------------------------------
-      call md_finit(int_mb(i_iw),int_mb(i_is),dbl_mb(i_xw),
-     + dbl_mb(i_xwm),dbl_mb(i_xs),dbl_mb(i_fw),dbl_mb(i_fs),
-     + dbl_mb(i_xsm),dbl_mb(i_xsmp))
-      call md_forces(int_mb(i_iw),int_mb(i_is),dbl_mb(i_xw),
-     + dbl_mb(i_xwm),dbl_mb(i_xs),dbl_mb(i_fw),dbl_mb(i_fs))
+          call md_finit(int_mb(i_iw),int_mb(i_is),dbl_mb(i_xw),
+     +     dbl_mb(i_xwm),dbl_mb(i_xs),dbl_mb(i_fw),dbl_mb(i_fs),
+     +     dbl_mb(i_xsm),dbl_mb(i_xsmp))
+          call md_forces(int_mb(i_iw),int_mb(i_is),dbl_mb(i_xw),
+     +     dbl_mb(i_xwm),dbl_mb(i_xs),dbl_mb(i_fw),dbl_mb(i_fs))
 c
-      call prp_proper(isdit,stime,eww,dbl_mb(i_esw),
-     + dbl_mb(i_ess),dbl_mb(i_fss),dbl_mb(i_esk),epme,uqmd,uqmmm,
-     + epot,epotw,epotsw,epots,volume,dwr,dbl_mb(i_dsr),ekin,etot,
-     + npolit,dbl_mb(i_gsm),dbl_mb(i_esa),box,dbl_mb(i_xsm))
+          call prp_proper(isdit,stime,eww,dbl_mb(i_esw),
+     +     dbl_mb(i_ess),dbl_mb(i_fss),dbl_mb(i_esk),epme,uqmd,uqmmm,
+     +     epot,epotw,epotsw,epots,volume,dwr,dbl_mb(i_dsr),ekin,etot,
+     +     npolit,dbl_mb(i_gsm),dbl_mb(i_esa),box,dbl_mb(i_xsm))
 c
+        endif
       endif
-      endif
 c
+      dx0sd=1.2d0*dx0sd
       edif=ecrit-epsd
       epsd=ecrit
       epsdw=epotw
