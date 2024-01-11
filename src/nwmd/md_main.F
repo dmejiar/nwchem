@@ -443,10 +443,10 @@ c
       eqrs=epot
       mdstep=0
       da=0.01
+      dx=dx0sd
 c
     1 continue
 
-      dx=dx0sd
       call timer_start(201)
 c
       dxf=dx/fmax
@@ -509,7 +509,8 @@ c
             fm(i,7)=zero
    16     continue
           do 17 i=1,nsaloc
-            factor=one/ws(i)
+            !factor=one/ws(i)
+            factor=one
             fm(mm(i,2),1)=fm(mm(i,2),1)+factor*fs(i,1)
             fm(mm(i,2),2)=fm(mm(i,2),2)+factor*fs(i,2)
             fm(mm(i,2),3)=fm(mm(i,2),3)+factor*
@@ -595,7 +596,7 @@ c
      +     dbl_mb(i_vs),nsaloc)
 c
         if(isdit.lt.msdit.and.dxmax.gt.dxsdmx) then
-          dx0sd=0.7d0*dx0sd
+          dx=0.7d0*dx
           da=0.7d0*da
           call timer_stop(201)
           if(dx0sd*fmax.gt.dxsdmx) goto 1
