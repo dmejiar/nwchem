@@ -589,7 +589,7 @@ c
 c     changing the logic here so that bad coordinates
 c     are not preserved in the last md iteration (M.V.)
 c     ------------------------------------------------
-      if(ecrit.gt.epsd) then
+      if(ecrit-epsd.gt.1d-3) then
 c
         call cf_restor(dbl_mb(i_xw),dbl_mb(i_yw),dbl_mb(i_fw),
      +     dbl_mb(i_vw),nwmloc,dbl_mb(i_xs),dbl_mb(i_ys),dbl_mb(i_fs),
@@ -599,7 +599,7 @@ c
           dx=0.7d0*dx
           da=0.7d0*da
           call timer_stop(201)
-          if(dx0sd*fmax.gt.dxsdmx) goto 1
+          goto 1
         else
 c
 c       this insures the global restoration of coordinates
@@ -619,7 +619,6 @@ c
         endif
       endif
 c
-      dx0sd=1.2d0*dx0sd
       edif=ecrit-epsd
       epsd=ecrit
       epsdw=epotw
