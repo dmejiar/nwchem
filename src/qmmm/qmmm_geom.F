@@ -199,6 +199,7 @@ c     local variables
       character*255 prefix
       character*255 rstfile(2)
       character*255 geomname
+      character*255 energyname
       character*32 pname
       integer nbeads,i
       logical ofile
@@ -270,12 +271,15 @@ c     ---------------------------------------------
          call ga_sync()
          if(ofile) then
            geomname = ' '
+           energyname = ' '
            write(geomname,14) i 
-           write(geomname,15) i 
+           write(energyname,15) i 
            call qmmm_geom_create_rst
      >             (irtdb,
      >              geomname,
      >              filename0(1:inp_strlen(filename0)))
+           if(.not.rtdb_put(irtdb, energyname, mt_dbl, 1, 0d0))
+     >       call errquit(pname//" cannot put to rtdb",0,0)      
          else
            call errquit(pname//"cannot find"//
      >          filename(1:inp_strlen(filename)),0,0)
