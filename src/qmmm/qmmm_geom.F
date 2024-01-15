@@ -271,6 +271,7 @@ c     ---------------------------------------------
          if(ofile) then
            geomname = ' '
            write(geomname,14) i 
+           write(geomname,15) i 
            call qmmm_geom_create_rst
      >             (irtdb,
      >              geomname,
@@ -287,6 +288,7 @@ c     ---------------------------------------------
 
  13      format(a,i3.3,'.rst')
  14      format('bead_',i6.6,":geom")
+ 15      format('bead_',i6.6,":energy")
 
       end
 
