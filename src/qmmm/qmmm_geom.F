@@ -286,7 +286,7 @@ c     ---------------------------------------------
      >    write(*,*) "out",pname
 
  13      format(a,i3.3,'.rst')
- 14      format('neb_bead_',i6.6,":geom")
+ 14      format('bead_',i6.6,":geom")
 
       end
 
