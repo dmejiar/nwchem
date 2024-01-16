@@ -957,8 +957,10 @@ c     >   geom_name = 'bead'//bead_index_name(i)//':geom'
       geomlen   = inp_strlen(geom_name)
 
       value =           geom_create(geom,'bead_tmp')
+      if(.not.value) call errquit("amatrix: could not create geom",0,0)
       value = value.and.geom_rtdb_load(bead_rtdb,geom,
      >                                 geom_name(1:geomlen))
+      if(.not.value) call errquit("amatrix: could not load geom",0,0)
 
 *     **** get amatrix ***
       if (.not.geom_amatrix_get(geom,amat)) then
@@ -1173,10 +1175,13 @@ c
       taglen    = inp_strlen(tag)
       nbeads    = size_bead_list(tag)
       value = geom_create(geom,'bead_tmp') 
+      if(.not.value) call errquit("could not create geom",0,0)
+
       do i=1,nbeads  
          rtdb_name = tag(1:taglen)//bead_index_name(i)//':energy'
          value = value.and.rtdb_get(bead_rtdb,rtdb_name,
      >                              mt_dbl,1,energy)
+         if(.not.value) call errquit("could not get energy",i,0)
 
          rtdb_name = tag(1:taglen)//bead_index_name(i)//':geom_name'
 c         if (.not.rtdb_cget(bead_rtdb,rtdb_name,1,geom_name))
@@ -1186,6 +1191,7 @@ c     >      geom_name = 'bead'//bead_index_name(i)//':geom'
          geomlen = inp_strlen(geom_name)      
          value = value.and.geom_rtdb_load(bead_rtdb,
      >                             geom,geom_name(1:geomlen))
+         if(.not.value) call errquit("could not load geom",i,0)
          value = value.and.geom_ncent(geom,nion)
 
          call amatrix_get_bead_list(tag,i,amat)
