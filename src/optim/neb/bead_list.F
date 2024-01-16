@@ -968,7 +968,7 @@ c     >   geom_name = 'bead'//bead_index_name(i)//':geom'
       end if
 
       value = value.and.geom_destroy(geom)
-      if (.not.value) call errquit('amatrix_get_bead_list failed',0,0)
+      if (.not.value) call errquit('amatrix_get_bead_list failed',100,0)
 
       return
       end
