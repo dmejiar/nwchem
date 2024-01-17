@@ -274,12 +274,13 @@ c     ---------------------------------------------
            energyname = ' '
            write(geomname,14) i 
            write(energyname,15) i 
+           write(energyname,15) i
            call qmmm_geom_create_rst
      >             (irtdb,
      >              geomname,
      >              filename0(1:inp_strlen(filename0)))
            if(.not.rtdb_put(irtdb, energyname, mt_dbl, 1, 0d0))
-     >       call errquit(pname//" cannot put to rtdb",0,0)      
+     >       call errquit(pname//' could not put into rtdb',282,0)
          else
            call errquit(pname//"cannot find"//
      >          filename(1:inp_strlen(filename)),0,0)
