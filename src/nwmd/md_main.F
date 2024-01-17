@@ -461,8 +461,8 @@ c
             vw(i,2,j)=fw(i,2,j)
             vw(i,3,j)=fw(i,3,j)
     3     continue
-          !factor=one/ww(j)
-          factor=one
+          factor=one/ww(j)
+          !factor=one
           do 4 i=1,nwmloc
             if(iand(iwdt(i),mfixed).ne.lfixed) then
               dxstep=factor*dxf*fw(i,1,j)
@@ -488,8 +488,8 @@ c
         if(imembr.eq.0) then
           do 6 i=1,nsaloc
             if(iand(isdt(i),mfixed).ne.lfixed) then
-              !factor=one/ws(i)
-              factor=one
+              factor=one/ws(i)
+              !factor=one
               dxstep=factor*dxf*fs(i,1)
               xs(i,1)=xs(i,1)+dxstep
               dxstep=factor*dxf*fs(i,2)
@@ -509,8 +509,8 @@ c
             fm(i,7)=zero
    16     continue
           do 17 i=1,nsaloc
-            !factor=one/ws(i)
-            factor=one
+            factor=one/ws(i)
+            !factor=one
             fm(mm(i,2),1)=fm(mm(i,2),1)+factor*fs(i,1)
             fm(mm(i,2),2)=fm(mm(i,2),2)+factor*fs(i,2)
             fm(mm(i,2),3)=fm(mm(i,2),3)+factor*
@@ -589,7 +589,7 @@ c
 c     changing the logic here so that bad coordinates
 c     are not preserved in the last md iteration (M.V.)
 c     ------------------------------------------------
-      if(ecrit-epsd.gt.1d-3) then
+      if(ecrit-epsd.gt.1d-1) then
 c
         call cf_restor(dbl_mb(i_xw),dbl_mb(i_yw),dbl_mb(i_fw),
      +     dbl_mb(i_vw),nwmloc,dbl_mb(i_xs),dbl_mb(i_ys),dbl_mb(i_fs),

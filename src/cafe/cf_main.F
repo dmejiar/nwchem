@@ -1374,7 +1374,7 @@ c
             if(iand(iwdt(i),lfixed).eq.0) then
               fm=fw(i,1,j)**2+fw(i,2,j)**2+fw(i,3,j)**2
               fnorm=fnorm+fm
-              fmax=max(fmax,fm)
+              fmax=max(fmax,factor*fm)
             endif
     2     continue
     1   continue
@@ -1386,7 +1386,7 @@ c
             fm=fs(i,1)**2+fs(i,2)**2+fs(i,3)**2
             fnorm=fnorm+fm
             factor=(one/wgt(isat(i),iset))*(one/wgt(isat(i),iset))
-            fmax=max(fmax,fm)
+            fmax=max(fmax,factor*fm)
           endif
     3   continue
       endif
