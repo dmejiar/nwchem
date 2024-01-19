@@ -25,8 +25,6 @@ c
 
 
       common/qmmm_bq_data/   
-     &                     bqfile_in,
-     &                     bqfile_out,
      &                     bq_exclude,
      &                     readbq,
      &                     allbqs,
@@ -46,6 +44,7 @@ c
      &                     i_cbq,h_cbq,
      &                     i_qbqw,h_qbqw,
      &                     i_qbqs,h_qbqs,
-     &                     bqsave
-
+     &                     bqsave,
+     &                     bqfile_in,
+     &                     bqfile_out
 
