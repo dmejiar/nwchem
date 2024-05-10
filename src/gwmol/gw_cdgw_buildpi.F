@@ -65,14 +65,17 @@ C     Note that we actually compute -\Pi.
           !
           ! Scale ERIs with factor in square brackets of Equation (39)
           !
-!$omp     parallel do MYSIMD schedule(static) collapse(2)
+#ifdef USE_OPENMP
+          call util_blas_set_num_threads(1)
+#endif
+!$omp     parallel do schedule(static)
           do ipole=1,npoles(1)
-          do iri=1,nri
-            ovup(iri,ipole) = ovup(iri,ipole)*factor(ipole,1)
+            call dscal(nri, factor(ipole,1), ovup(1,ipole), 1)
           enddo
-          enddo
-!$omp     end parallel do MYSIMD
-
+!$omp     end parallel do
+#ifdef USE_OPENMP
+          call util_blas_set_num_threads(nthreads)
+#endif
           !
           ! DSFRK is the RFP version of DSYRK
           !
@@ -81,13 +84,17 @@ C     Note that we actually compute -\Pi.
           !
           ! Back-transform ERIs, since we are going to need them again
           !
-!$omp     parallel do MYSIMD schedule(static) collapse(2)
+#ifdef USE_OPENMP
+          call util_blas_set_num_threads(1)
+#endif
+!$omp     parallel do schedule(static)
           do ipole=1,npoles(1)
-          do iri=1,nri
-            ovup(iri,ipole) = ovup(iri,ipole)/factor(ipole,1)
+            call dscal(nri, 1d0/factor(ipole,1), ovup(1,ipole), 1)
           enddo
-          enddo
-!$omp     end parallel do MYSIMD
+!$omp     end parallel do
+#ifdef USE_OPENMP
+          call util_blas_set_num_threads(nthreads)
+#endif
 
         endif
 
@@ -99,13 +106,17 @@ C     Note that we actually compute -\Pi.
           !
           ! Scale ERIs with factor in square brackets of Equation (39)
           !
-!$omp     parallel do MYSIMD schedule(static) collapse(2)
-          do ipole=1,npoles(2)
-          do iri=1,nri
-            ovdw(iri,ipole) = ovdw(iri,ipole)*factor(ipole,2)
+#ifdef USE_OPENMP
+          call util_blas_set_num_threads(1)
+#endif
+!$omp     parallel do schedule(static)
+          do ipole=1,npoles(2) 
+            call dscal(nri, factor(ipole,2), ovdw(1,ipole), 1)
           enddo
-          enddo
-!$omp     end parallel do MYSIMD
+!$omp     end parallel do
+#ifdef USE_OPENMP
+          call util_blas_set_num_threads(nthreads)
+#endif
 
           !
           ! DSFRK is the RFP version of DSYRK
@@ -115,13 +126,17 @@ C     Note that we actually compute -\Pi.
           !
           ! Back-transform ERIs, since we are going to need them again
           !
-!$omp     parallel do MYSIMD schedule(static) collapse(2)
+#ifdef USE_OPENMP
+          call util_blas_set_num_threads(1)
+#endif
+!$omp     parallel do schedule(static)
           do ipole=1,npoles(2)
-          do iri=1,nri
-            ovdw(iri,ipole) = ovdw(iri,ipole)/factor(ipole,2)
+            call dscal(nri, 1d0/factor(ipole,2), ovdw(1,ipole), 1)
           enddo
-          enddo
-!$omp     end parallel do MYSIMD
+!$omp     end parallel do
+#ifdef USE_OPENMP
+          call util_blas_set_num_threads(nthreads)
+#endif
 
         endif
 

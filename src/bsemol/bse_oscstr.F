@@ -84,6 +84,8 @@
      $              pars%nmo)
         stat = ga_destroy(g_work).and.
      $         ga_destroy(g_corr)
+        if (.not.stat)
+     $    call errquit('bse_oscstr: failed to destroy GA',0,GA_ERR)
       endif
 
       g_dipx = ga_create_atom_blocked(geom, ao_bas_han, 'X')
