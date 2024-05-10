@@ -208,6 +208,7 @@ c      end do
 ! allocate temp. arrays
 !
       call int_mem_dipole(max1e,mscratch,ibas,jbas,2)
+      mscratch = max(100000,mscratch)
 !
       if(.not.MA_push_get(MT_DBL,max1e,'int_qdr_ga:buf',l_buf,k_buf))
      $  call errquit('int_qdr_ga: ma failure',max1e, MA_ERR)
@@ -277,14 +278,12 @@ c      end do
       double precision buf(jlo:jhi,6,ilo:ihi)
       integer i, j
       do i = ilo,ihi
-         do j = jlo, jhi
-            call ga_put(g_xx,i,i,j,j,buf(j,1,i),1)
-            call ga_put(g_xy,i,i,j,j,buf(j,2,i),1)
-            call ga_put(g_xz,i,i,j,j,buf(j,3,i),1)
-            call ga_put(g_yy,i,i,j,j,buf(j,4,i),1)
-            call ga_put(g_yz,i,i,j,j,buf(j,5,i),1)
-            call ga_put(g_zz,i,i,j,j,buf(j,6,i),1)
-         end do
+         call ga_put(g_xx,i,i,jlo,jhi,buf(jlo,1,i),1)
+         call ga_put(g_xy,i,i,jlo,jhi,buf(jlo,2,i),1)
+         call ga_put(g_xz,i,i,jlo,jhi,buf(jlo,3,i),1)
+         call ga_put(g_yy,i,i,jlo,jhi,buf(jlo,4,i),1)
+         call ga_put(g_yz,i,i,jlo,jhi,buf(jlo,5,i),1)
+         call ga_put(g_zz,i,i,jlo,jhi,buf(jlo,6,i),1)
       end do
       end
 

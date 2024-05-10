@@ -240,7 +240,7 @@
         write(*,*) "--------------------------------"
       endif
 
-      do idavidson=1,20
+      do idavidson=1,100
 
         ! Build projected matrix
         call dcopy(ntrials*ntrials,0d0,0,dbl_mb(vkv),1)
@@ -461,7 +461,7 @@
 
         ! All trial vectors were linearly-dependent
         ! restart calculation with current best guess
-        if (mdim.eq.0) then
+        if (mdim.lt.2) then
           call bse_davidson_restart(ntrials,pars%nroots,npoles,
      $          g_x,g_y,g_ym,g_s,g_ks,g_mks,l_vkv,vkv,int_mb(k_map),
      $          pars%nblocks)
