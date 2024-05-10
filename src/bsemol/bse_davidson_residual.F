@@ -17,6 +17,7 @@
         norm(iroot) = maxval(abs(r))
         xnorm = maxval(abs(x(:,iroot)))
         call ga_dgop((/1/),norm(iroot),1,"maxabs")
+        call ga_dgop((/1/),xnorm,1,"maxabs")
         if (norm(iroot).gt.1d-5) then
           ndim = ndim + 1
           w(:,ndim) = r(:)/(dia(:) - omega(iroot))

@@ -18,7 +18,7 @@ c
       character*255 test
       character(*), parameter :: pname = "bse_input: "
 c
-      integer, parameter :: num_dirs = 10
+      integer, parameter :: num_dirs = 11
       character*11 dirs(num_dirs)
       data dirs / 'method','tda','ncap','ncapr','singlet','triplet', 
      &            'outwin', 'nroots', 'maxroots', 'skipgw', 'end' /

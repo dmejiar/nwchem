@@ -80,11 +80,7 @@ C
       ! If the solution vector is 0, just skip the computation
       !
       if (x0norm.eq.0d0) then
-!$omp   parallel do simd schedule(static)
-        do i=1,n
-          y(i) = b(i)
-        end do
-!$omp   end parallel do simd
+        y(:) = b(:)
         goto 1000
       endif
 
@@ -105,11 +101,7 @@ C
       ! Obtain the residual by completing the action of the dielectric
       ! matrix (top line of Equation (47)).
       !
-!$omp parallel do simd schedule(static)
-      do i=1,n
-        y(i) = y(i) + b(i) - x(i)
-      enddo
-!$omp end parallel do simd
+      y(:) = y(:) + b(:) - x(:)
 
 1000  beta1 = util_norm2(n,y)
 
@@ -139,29 +131,19 @@ C
       sn = 0d0
       gmax = 0d0
 
-!$omp parallel do simd schedule(static)
-      do i=1,n
-        r1(i) = y(i)
-        r2(i) = y(i)
-        w(i) = 0d0
-        w1(i) = 0d0
-        w2(i) = 0d0
-        sol(i) = 0d0
-      enddo
-!$omp end parallel do simd
-
+      r1(:) = y(:)
+      r2(:) = y(:)
+      w(:) = 0d0
+      w1(:) = 0d0
+      w2(:) = 0d0
+      sol(:) = 0d0
       bnorm = util_norm2(n,b)
 
       do
         iter = iter + 1
         s = 1d0/beta
 
-!$omp   parallel do simd schedule(static)
-        do i=1,n
-          v(i) = s*y(i)
-        enddo
-!$omp   end parallel do simd
-
+        v(:) = s*y(:)
         !
         ! Obtain the action of the polarizability matrix
         ! (bottom line of Equation (47)).
@@ -186,12 +168,8 @@ C
         oldb = beta
         call daxpy(n,-alpha/beta,r2,1,y,1)
 
-!$omp   parallel do simd schedule(static)
-        do i=1,n
-          r1(i) = r2(i)
-          r2(i) = y(i)
-        enddo
-!$omp   end parallel do simd
+        r1(:) = r2(:)
+        r2(:) = y(:)
 
         beta = util_norm2(n,r2)
 
@@ -235,14 +213,9 @@ C
         phi    = cs*phibar
         phibar = sn*phibar
 
-!$omp   parallel do schedule(static)
-        do i=1,n
-          w1(i) = w2(i)
-          w2(i) = w(i)
-          w(i) = (v(i) - oldeps*w1(i) - delta*w(i))/gam
-        enddo
-!$omp   end parallel do
-
+        w1(:) = w2(:)
+        w2(:) = w(:)
+        w(:) = (v(:) - oldeps*w1(:) - delta*w(:))/gam
         call daxpy(n,phi,w,1,sol,1)
 
         dxnorm = util_norm2(n,sol)
@@ -375,11 +348,7 @@ C
       !
       ! Factor in square brackets of Equation (47)
       !
-!$omp parallel do simd schedule(static)
-      do i=1,npoles
-        tmp(i) = tmp(i)*factor(i)
-      enddo
-!$omp end parallel do simd
+      tmp(:) = tmp(:)*factor(:)
 
       !
       ! First sum on the bottom line of Equation (47)
