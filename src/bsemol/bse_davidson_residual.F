@@ -9,14 +9,16 @@
       double precision x(npoles,nroots),dia(npoles),w(npoles,nroots)
 
       integer iroot
-      double precision norm(nroots)
+      double precision norm(nroots), xnorm
 
       ndim = 0
       do iroot=1,nroots
         r(:) = ym(:,iroot) - omega(iroot)*x(:,iroot)
         norm(iroot) = maxval(abs(r))
+        xnorm = maxval(abs(x(:,iroot)))
         call ga_dgop((/1/),norm(iroot),1,"maxabs")
-        if (norm(iroot).gt.1d-5) then
+        call ga_dgop((/1/),xnorm,1,"maxabs")
+        if ((norm(iroot).gt.1d-5)) then
           ndim = ndim + 1
           w(:,ndim) = r(:)/(dia(:) - omega(iroot))
         endif

@@ -39,7 +39,7 @@
       k = 1
   100 continue
       do i=k,m
-        if (eig(i).lt.1d-12) then
+        if (eig(i).lt.1d-8) then
           do j=i+1,n
             eig(j-1) = eig(j)
             vkv(:,j-1) = vkv(:,j)
