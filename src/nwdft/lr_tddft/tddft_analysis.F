@@ -42,6 +42,7 @@ c
 #include "rtdb.fh"
 #include "sym.fh"
 #include "util.fh"
+#include "util_params.fh"
 #include "msgids.fh"
 #include "stdio.fh"
 #include "dra.fh"
@@ -108,6 +109,7 @@ c
       integer g_smat           ! GA handle for AO overlap matrix
       integer g_corr           ! GA handle for alpha-beta MO correlation matrix
       integer g_work
+      integer g_work2
 c
       integer g_x1(2)          ! GA handle for X matrix of 1 root
       integer g_y1(2)          ! GA handle for Y matrix of 1 root
@@ -155,6 +157,7 @@ c     This was modified from dft_main0d.F
       integer g_vecT   ! ga for 'transition perturbed MOs'
       integer g_sket1  ! ga for < AO | d AO / d B>, 3 components
       integer g_dipvel ! ga for dipole-velocity integrals
+      integer g_qdrxx, g_qdrxy, g_qdrxz, g_qdryy, g_qdryz, g_qdrzz
       integer alo(3), ahi(3), blo(3), bhi(3), clo(3), chi(3)
       integer icomp ! field components
 c     caution: speed of light and rotatory strength conversion factor
@@ -200,6 +203,16 @@ c
       logical lstores2
       double precision s2_tmp(nroots)
       integer ioserr
+
+      integer ga_create_atom_blocked
+      external ga_create_atom_blocked
+
+c
+c     Exciton wavefunction analysis
+c     
+      double precision xe(3), xh(3), xe2_exp, xh2_exp, xe_exp_2
+      double precision xh_exp_2, xhxe_exp, dhtoe, dexc, sigma_h, sigma_e
+      double precision omega_norm, cov, pcc
 c
 c     MN solvation models --> 
 c
@@ -355,6 +368,18 @@ c        == Compute the dipole integrals for the 3 components ==
      $        g_dipole(1), g_dipole(2), g_dipole(3))
 c
        end if
+
+       if (oscstr) then
+        g_qdrxx = ga_create_atom_blocked(geom, ao_bas_han, 'XX')
+        g_qdrxy = ga_create_atom_blocked(geom, ao_bas_han, 'XY')
+        g_qdrxz = ga_create_atom_blocked(geom, ao_bas_han, 'XZ')
+        g_qdryy = ga_create_atom_blocked(geom, ao_bas_han, 'YY')
+        g_qdryz = ga_create_atom_blocked(geom, ao_bas_han, 'YZ')
+        g_qdrzz = ga_create_atom_blocked(geom, ao_bas_han, 'ZZ')
+        g_work2 = ga_create_atom_blocked(geom, ao_bas_han, 'work2')
+        call int_qdr_ga(ao_bas_han, ao_bas_han, g_qdrxx, g_qdrxy, 
+     $                  g_qdrxz, g_qdryy, g_qdryz, g_qdrzz)
+       endif
 c
        if (cdspectrum .or. oscstr) then
 c
@@ -1201,6 +1226,69 @@ c
          enddo ! ipol
 
         endif ! .not.tda 
+
+        if (oscstr) then
+          if (ipol.gt.1)
+     $       call ga_add(1.d0, g_tdtot(1), 1.0, g_tdtot(2), g_tdtot(1))
+
+        ! Indicators
+          call ga_dgemm('t', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
+     $                     g_tdtot(1), g_smat, 0d0, g_work)
+          call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
+     $                   g_work, g_tdtot(1), 0d0, g_work2) 
+          omega_norm = ga_ddot(g_work2, g_smat)
+          xe(1) = ga_ddot(g_work2,g_dipole(1))/omega_norm
+          xe(2) = ga_ddot(g_work2,g_dipole(2))/omega_norm
+          xe(3) = ga_ddot(g_work2,g_dipole(3))/omega_norm
+          xe_exp_2 = xe(1)**2 + xe(2)**2 + xe(3)**2
+          xe2_exp  = (ga_ddot(g_work2,g_qdrxx) + 
+     $                ga_ddot(g_work2,g_qdryy) +
+     $                ga_ddot(g_work2,g_qdrzz))/omega_norm
+       
+                 
+          call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0, 
+     $                   g_tdtot(1), g_smat, 0d0, g_work)
+          call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0, g_work,
+     $                   g_tdtot(1), 0d0, g_work2) 
+          xh(1) = ga_ddot(g_work2,g_dipole(1))/omega_norm
+          xh(2) = ga_ddot(g_work2,g_dipole(2))/omega_norm
+          xh(3) = ga_ddot(g_work2,g_dipole(3))/omega_norm
+          xh_exp_2 = xh(1)**2 + xh(2)**2 + xh(3)**2
+          xh2_exp  = (ga_ddot(g_work2,g_qdrxx) + 
+     $                ga_ddot(g_work2,g_qdryy) +
+     $                ga_ddot(g_work2,g_qdrzz))/omega_norm
+       
+       
+          xhxe_exp = 0d0 
+          call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
+     $                 g_tdtot(1), g_dipole(1), 0d0,g_work)
+          call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0, 
+     $                 g_work, g_tdtot(1), 0d0, g_work2)
+          xhxe_exp = xhxe_exp + ga_ddot(g_work2,g_dipole(1))/omega_norm
+          call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0, 
+     $                 g_tdtot(1),g_dipole(2), 0d0, g_work)
+          call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0,
+     $                 g_work,g_tdtot(1), 0d0, g_work2)
+          xhxe_exp = xhxe_exp + ga_ddot(g_work2,g_dipole(2))/omega_norm
+          call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
+     $                 g_tdtot(1), g_dipole(3), 0d0, g_work)
+          call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0,
+     $                 g_work, g_tdtot(1), 0d0, g_work2)
+          xhxe_exp = xhxe_exp + ga_ddot(g_work2,g_dipole(3))/omega_norm
+       
+          sigma_h = dsqrt(xh2_exp - xh_exp_2)
+          sigma_e = dsqrt(xe2_exp - xe_exp_2)
+       
+          dhtoe   = dsqrt((xe(1)-xh(1))**2 + 
+     $                         (xe(2)-xh(2))**2 +
+     $                         (xe(3)-xh(3))**2)
+          dexc    = dsqrt(xe2_exp + xh2_exp - 2d0*xhxe_exp)
+          cov     = xhxe_exp - xe(1)*xh(1) - xe(2)*xh(2) - xe(3)*xh(3)
+          pcc     = cov/sigma_e/sigma_h
+
+          if (ipol.gt.1)
+     $      call ga_add(1.d0, g_tdtot(1),-1.0, g_tdtot(2), g_tdtot(1))
+        endif
 c
 c       write out the transition density matrix
 c
@@ -1263,7 +1351,6 @@ c
      2                        tmom(8),tmom(9),tmom(10),
      2                        osc_str(1),osc_str(2),osc_str(3),
      2                        osc_str_tot
-
 c
 c           ------------------------
 c           print data related to CD
@@ -1432,6 +1519,13 @@ c
      $        'Velocity: E <= 1e-6. skipping this excitation'
             end if ! velocity
 c     /jochen
+            write(luout,*)
+            write(luout,9440) omega_norm
+            write(luout,9400) sigma_e*cau2ang
+            write(luout,9410) sigma_h*cau2ang
+            write(luout,9420) dhtoe*cau2ang
+            write(luout,9430) dexc*cau2ang
+            write(luout,9450) pcc
           endif
         endif
         write(tag,'("tddft:oscillator_strength:",i6.6)')n
@@ -1686,6 +1780,23 @@ c        call schwarz_tidy()
 c        call int_terminate()
       end if ! cdspectrum .and. lgiao
 
+      if (oscstr) then
+        if(.not.ga_destroy(g_qdrxx)) call errquit
+     &  (pname//'Could not destroy g_qdrxx', 0, GA_ERR)
+        if(.not.ga_destroy(g_qdryy)) call errquit
+     &  (pname//'Could not destroy g_qdryy', 0, GA_ERR)
+        if(.not.ga_destroy(g_qdrzz)) call errquit
+     &  (pname//'Could not destroy g_qdrzz', 0, GA_ERR)
+        if(.not.ga_destroy(g_qdrxy)) call errquit
+     &  (pname//'Could not destroy g_qdrxy', 0, GA_ERR)
+        if(.not.ga_destroy(g_qdrxz)) call errquit
+     &  (pname//'Could not destroy g_qdrxz', 0, GA_ERR)
+        if(.not.ga_destroy(g_qdryz)) call errquit
+     &  (pname//'Could not destroy g_qdryz', 0, GA_ERR)
+        if(.not.ga_destroy(g_work2)) call errquit
+     &  (pname//'Could not destroy g_work2', 0, GA_ERR)
+
+      endif
 c
       if (.not. ga_destroy(g_temp)) call errquit
      &   (pname//'Could not destroy g_temp', 0, GA_ERR)
@@ -1737,6 +1848,12 @@ c
      & f8.4,' Debye')
  9254 format(5x,'Total Ground State Dipole Moment = ',
      & f8.4,' Debye')
+ 9400 format(2x,'     Sigma_e = ',f8.4, ' Angstrom')
+ 9410 format(2x,'     sigma_h = ',f8.4, ' Angstrom')
+ 9420 format(2x,'    |d_h->e| = ',f8.4, ' Angstrom')
+ 9430 format(2x,'       d_exc = ',f8.4, ' Angstrom')
+ 9450 format(2x,'Pearson C.C. = ',f8.4)
+ 9440 format(2x,'Exciton norm = ',f8.4)
 c
 c -----------
 c Target root
