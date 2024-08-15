@@ -42,6 +42,7 @@ C     Note that we actually compute -\Pi.
 #ifdef USE_OPENMP
       integer, external :: omp_get_max_threads
       nthreads = omp_get_max_threads()
+      call util_blas_set_num_threads(nthreads)
 #else
       nthreads = 1
 #endif
