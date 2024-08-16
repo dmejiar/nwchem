@@ -110,6 +110,7 @@ c
       integer g_corr           ! GA handle for alpha-beta MO correlation matrix
       integer g_work
       integer g_work2
+      integer g_work3
 c
       integer g_x1(2)          ! GA handle for X matrix of 1 root
       integer g_y1(2)          ! GA handle for Y matrix of 1 root
@@ -370,13 +371,37 @@ c
        end if
 
        if (oscstr) then
-        g_qdrxx = ga_create_atom_blocked(geom, ao_bas_han, 'XX')
-        g_qdrxy = ga_create_atom_blocked(geom, ao_bas_han, 'XY')
-        g_qdrxz = ga_create_atom_blocked(geom, ao_bas_han, 'XZ')
-        g_qdryy = ga_create_atom_blocked(geom, ao_bas_han, 'YY')
-        g_qdryz = ga_create_atom_blocked(geom, ao_bas_han, 'YZ')
-        g_qdrzz = ga_create_atom_blocked(geom, ao_bas_han, 'ZZ')
-        g_work2 = ga_create_atom_blocked(geom, ao_bas_han, 'work2')
+        if (.not. ga_create(MT_DBL, nbf_ao, nbf_ao, 'g_qdrxx',
+     $                      nbf_ao, 0, g_qdrxx))
+     $   call errquit(pname//'ga_create failed g_dipole',0, GA_ERR)
+        call ga_zero(g_qdrxx)
+        if (.not. ga_create(MT_DBL, nbf_ao, nbf_ao, 'g_qdryy',
+     $                      nbf_ao, 0, g_qdryy))
+     $  call errquit(pname//'ga_create failed g_dipole',0, GA_ERR)
+        call ga_zero(g_qdryy)
+        if (.not. ga_create(MT_DBL, nbf_ao, nbf_ao, 'g_qdrzz',
+     $                      nbf_ao, 0, g_qdrzz))
+     $   call errquit(pname//'ga_create failed g_dipole',0, GA_ERR)
+        call ga_zero(g_qdrzz)
+        if (.not. ga_create(MT_DBL, nbf_ao, nbf_ao, 'g_qdrxy',
+     $                      nbf_ao, 0, g_qdrxy))
+     $   call errquit(pname//'ga_create failed g_dipole',0, GA_ERR)
+        call ga_zero(g_qdrxy)
+        if (.not. ga_create(MT_DBL, nbf_ao, nbf_ao, 'g_qdrxz',
+     $                      nbf_ao, 0, g_qdrxz))
+     $   call errquit(pname//'ga_create failed g_dipole',0, GA_ERR)
+        call ga_zero(g_qdrxz)
+        if (.not. ga_create(MT_DBL, nbf_ao, nbf_ao, 'g_qdryz',
+     $                      nbf_ao, 0, g_qdryz))
+     $   call errquit(pname//'ga_create failed g_dipole',0, GA_ERR)
+        call ga_zero(g_qdryz)
+        if (.not. ga_create(MT_DBL, nbf_ao, nbf_ao, 'g_work2',
+     $                      nbf_ao, 0, g_work2))
+     $   call errquit(pname//'ga_create failed g_dipole',0, GA_ERR)
+        if (.not. ga_create(MT_DBL, nbf_ao, nbf_ao, 'g_work3',
+     $                      nbf_ao, 0, g_work3))
+     $   call errquit(pname//'ga_create failed g_dipole',0, GA_ERR)
+
         call int_qdr_ga(ao_bas_han, ao_bas_han, g_qdrxx, g_qdrxy, 
      $                  g_qdrxz, g_qdryy, g_qdryz, g_qdrzz)
        endif
@@ -1097,6 +1122,13 @@ c
         call tddft_transfm(n,g_x,g_movecs,nbf_ao,
      1    nocc,nmo,nfc,nfv,ipol,g_td,1)  ! x-transition density
 c
+c       transpose g_td for exciton analysis
+c
+        do i = 1, ipol
+          call ga_transpose(g_td(i), g_work2)
+          call ga_copy(g_work2, g_td(i))
+        enddo
+c
 c       copy X-component into total array
 c       g_td has X component here
         do i = 1,ipol
@@ -1233,9 +1265,9 @@ c
 
         ! Indicators
           call ga_dgemm('t', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
-     $                     g_tdtot(1), g_smat, 0d0, g_work)
+     $                     g_tdtot(1), g_smat, 0d0, g_work3)
           call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
-     $                   g_work, g_tdtot(1), 0d0, g_work2) 
+     $                   g_work3, g_tdtot(1), 0d0, g_work2) 
           omega_norm = ga_ddot(g_work2, g_smat)
           xe(1) = ga_ddot(g_work2,g_dipole(1))/omega_norm
           xe(2) = ga_ddot(g_work2,g_dipole(2))/omega_norm
@@ -1247,8 +1279,8 @@ c
        
                  
           call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0, 
-     $                   g_tdtot(1), g_smat, 0d0, g_work)
-          call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0, g_work,
+     $                   g_tdtot(1), g_smat, 0d0, g_work3)
+          call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0, g_work3,
      $                   g_tdtot(1), 0d0, g_work2) 
           xh(1) = ga_ddot(g_work2,g_dipole(1))/omega_norm
           xh(2) = ga_ddot(g_work2,g_dipole(2))/omega_norm
@@ -1261,19 +1293,19 @@ c
        
           xhxe_exp = 0d0 
           call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
-     $                 g_tdtot(1), g_dipole(1), 0d0,g_work)
+     $                 g_tdtot(1), g_dipole(1), 0d0,g_work3)
           call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0, 
-     $                 g_work, g_tdtot(1), 0d0, g_work2)
+     $                 g_work3, g_tdtot(1), 0d0, g_work2)
           xhxe_exp = xhxe_exp + ga_ddot(g_work2,g_dipole(1))/omega_norm
           call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0, 
-     $                 g_tdtot(1),g_dipole(2), 0d0, g_work)
+     $                 g_tdtot(1),g_dipole(2), 0d0, g_work3)
           call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0,
-     $                 g_work,g_tdtot(1), 0d0, g_work2)
+     $                 g_work3,g_tdtot(1), 0d0, g_work2)
           xhxe_exp = xhxe_exp + ga_ddot(g_work2,g_dipole(2))/omega_norm
           call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
-     $                 g_tdtot(1), g_dipole(3), 0d0, g_work)
+     $                 g_tdtot(1), g_dipole(3), 0d0, g_work3)
           call ga_dgemm('n', 't', nbf_ao, nbf_ao, nbf_ao, 1.d0,
-     $                 g_work, g_tdtot(1), 0d0, g_work2)
+     $                 g_work3, g_tdtot(1), 0d0, g_work2)
           xhxe_exp = xhxe_exp + ga_ddot(g_work2,g_dipole(3))/omega_norm
        
           sigma_h = dsqrt(xh2_exp - xh_exp_2)
@@ -1795,7 +1827,8 @@ c        call int_terminate()
      &  (pname//'Could not destroy g_qdryz', 0, GA_ERR)
         if(.not.ga_destroy(g_work2)) call errquit
      &  (pname//'Could not destroy g_work2', 0, GA_ERR)
-
+        if(.not.ga_destroy(g_work3)) call errquit
+     &  (pname//'Could not destroy g_work3', 0, GA_ERR)
       endif
 c
       if (.not. ga_destroy(g_temp)) call errquit
@@ -1848,12 +1881,12 @@ c
      & f8.4,' Debye')
  9254 format(5x,'Total Ground State Dipole Moment = ',
      & f8.4,' Debye')
- 9400 format(2x,'     Sigma_e = ',f8.4, ' Angstrom')
- 9410 format(2x,'     sigma_h = ',f8.4, ' Angstrom')
- 9420 format(2x,'    |d_h->e| = ',f8.4, ' Angstrom')
- 9430 format(2x,'       d_exc = ',f8.4, ' Angstrom')
- 9450 format(2x,'Pearson C.C. = ',f8.4)
- 9440 format(2x,'Exciton norm = ',f8.4)
+ 9400 format(5x,'     sigma_e = ',f8.4, ' Angstrom')
+ 9410 format(5x,'     sigma_h = ',f8.4, ' Angstrom')
+ 9420 format(5x,'    |d_h->e| = ',f8.4, ' Angstrom')
+ 9430 format(5x,'       d_exc = ',f8.4, ' Angstrom')
+ 9450 format(5x,'Pearson C.C. = ',f8.4)
+ 9440 format(5x,'Exciton norm = ',f8.4)
 c
 c -----------
 c Target root
