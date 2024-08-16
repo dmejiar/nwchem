@@ -47,7 +47,7 @@
       double precision thresh  ! Threshold for printing
       double precision xe(3), xh(3), xe2_exp, xh2_exp, xe_exp_2
       double precision xh_exp_2, xhxe_exp, dhtoe, dexc, sigma_h, sigma_e
-      double precision omega_norm, cov, pcc
+      double precision omega_norm, cov, pcc, dcd
 
       parameter (thresh=1.0d-2)
       spin(1)='alpha'
@@ -282,6 +282,7 @@
         dexc    = dsqrt(xe2_exp + xh2_exp - 2d0*xhxe_exp)
         cov     = xhxe_exp - xe(1)*xh(1) - xe(2)*xh(2) - xe(3)*xh(3)
         pcc     = cov/sigma_e/sigma_h
+        dcd     = dhtoe - 0.5d0*(sigma_e + sigma_h)
 
 
         if (ltransden) then
@@ -378,6 +379,7 @@
           write(luout,9310) sigma_h*cau2ang
           write(luout,9320) dhtoe*cau2ang
           write(luout,9330) dexc*cau2ang
+          write(luout,9360) dcd*cau2ang
           write(luout,9350) pcc
 
 
@@ -508,6 +510,7 @@
  9310 format(5x,'     sigma_h = ',f8.4, ' Angstrom')
  9320 format(5x,'    |d_h->e| = ',f8.4, ' Angstrom')
  9330 format(5x,'       d_exc = ',f8.4, ' Angstrom')
+ 9360 format(5x,'        d_CD = ',f8.4, ' Angstrom')
  9350 format(5x,'Pearson C.C. = ',f8.4)
  9340 format(5x,'Exciton norm = ',f8.4)
  

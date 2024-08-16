@@ -213,7 +213,8 @@ c     Exciton wavefunction analysis
 c     
       double precision xe(3), xh(3), xe2_exp, xh2_exp, xe_exp_2
       double precision xh_exp_2, xhxe_exp, dhtoe, dexc, sigma_h, sigma_e
-      double precision omega_norm, cov, pcc
+      double precision omega_norm, cov, pcc, dcd
+      integer ioserr
 c
 c     MN solvation models --> 
 c
@@ -1261,11 +1262,11 @@ c
 
         if (oscstr) then
           if (ipol.gt.1)
-     $       call ga_add(1.d0, g_tdtot(1), 1.0, g_tdtot(2), g_tdtot(1))
+     $       call ga_add(1.d0, g_tdtot(1), 1.d0, g_tdtot(2), g_tdtot(1))
 
         ! Indicators
           call ga_dgemm('t', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
-     $                     g_tdtot(1), g_smat, 0d0, g_work3)
+     $                   g_tdtot(1), g_smat, 0d0, g_work3)
           call ga_dgemm('n', 'n', nbf_ao, nbf_ao, nbf_ao, 1.d0,
      $                   g_work3, g_tdtot(1), 0d0, g_work2) 
           omega_norm = ga_ddot(g_work2, g_smat)
@@ -1317,9 +1318,10 @@ c
           dexc    = dsqrt(xe2_exp + xh2_exp - 2d0*xhxe_exp)
           cov     = xhxe_exp - xe(1)*xh(1) - xe(2)*xh(2) - xe(3)*xh(3)
           pcc     = cov/sigma_e/sigma_h
+          dcd     = dhtoe - 0.5d0*(sigma_e + sigma_h)
 
           if (ipol.gt.1)
-     $      call ga_add(1.d0, g_tdtot(1),-1.0, g_tdtot(2), g_tdtot(1))
+     $      call ga_add(1.d0, g_tdtot(1),-1.d0, g_tdtot(2), g_tdtot(1))
         endif
 c
 c       write out the transition density matrix
@@ -1557,6 +1559,7 @@ c     /jochen
             write(luout,9410) sigma_h*cau2ang
             write(luout,9420) dhtoe*cau2ang
             write(luout,9430) dexc*cau2ang
+            write(luout,9460) dcd*cau2ang
             write(luout,9450) pcc
           endif
         endif
@@ -1885,6 +1888,7 @@ c
  9410 format(5x,'     sigma_h = ',f8.4, ' Angstrom')
  9420 format(5x,'    |d_h->e| = ',f8.4, ' Angstrom')
  9430 format(5x,'       d_exc = ',f8.4, ' Angstrom')
+ 9460 format(5x,'        d_CD = ',f8.4, ' Angstrom')
  9450 format(5x,'Pearson C.C. = ',f8.4)
  9440 format(5x,'Exciton norm = ',f8.4)
 c
