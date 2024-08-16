@@ -24,12 +24,13 @@
 
       integer isym,jsym,i,j,k,l,pol,occ,vir,ioff
       integer g_td(2),g_xy(2),g_dipmag, g_ovlp, g_work, g_corr
+      integer g_tdtot(2)
       integer k_corr, l_corr, ulloop
       character*4 oname,vname
 
       integer g_dipx, g_dipy, g_dipz
       integer g_qdrxx, g_qdrxy, g_qdrxz, g_qdryy, g_qdryz, g_qdrzz
-      integer g_work2, g_work3
+      integer g_work2, g_work3, g_x(2), g_y(2)
 
       logical ltransden,stat
       double precision origin(3)
@@ -156,9 +157,19 @@
         if(.not.ga_create(mt_dbl,nbf_ao,nbf_ao,'Transition density',
      $                    -1,-1,g_td(i))) call errquit
      $    ('bse_oscstr: failed to create g_td',0,GA_ERR)
+        if(.not.ga_create(mt_dbl,nbf_ao,nbf_ao,'Transition density',
+     $                    -1,-1,g_tdtot(i))) call errquit
+     $    ('bse_oscstr: failed to create g_td',0,GA_ERR)
+
         if(.not.ga_create(mt_dbl,pars%npoles(i),1,'X+Y vector',-1,1,
      $                    g_xy(i))) call errquit
      $    ('bse_oscstr: failed to create g_xy',0,GA_ERR)
+        if(.not.ga_create(mt_dbl,pars%npoles(i),1,'X vector',-1, 1,
+     $                    g_x(i))) call errquit
+     $    ('bse_oscstr: failed to create g_x', 0, GA_ERR)
+        if(.not.ga_create(mt_dbl,pars%npoles(i),1,'Y vector',-1, 1,
+     $                    g_y(i))) call errquit
+     $    ('bse_oscstr: failed to create g_y', 0, GA_ERR)   
       enddo
 
       ! Compute the oscillator strengths around an energy window
@@ -170,25 +181,39 @@
         oscstr(:)  = 0d0
         mag_transdip = 0d0
 
-        call ga_copy_patch('n',pars%g_apb,1,pars%npoles(1),ipole,ipole,
-     &                         g_xy(1),1,pars%npoles(1),1,1)
-        if (pars%davidson) then
-          call ga_add_patch(1d0,pars%g_amb,1,pars%npoles(1),ipole,ipole,
-     &                    1d0,g_xy(1),1,pars%npoles(1),1,1,
-     &                        g_xy(1),1,pars%npoles(1),1,1)
-        endif
+        call ga_copy_patch('n', pars%g_apb, 1, pars%npoles(1), ipole,
+     $                      ipole, g_x(1), 1, pars%npoles(1), 1, 1)
         if (pars%ipol.gt.1) then
-          call ga_copy_patch('n',pars%g_apb,pars%npoles(1)+1,npoles,
-     &                        ipole,ipole,g_xy(2),1,pars%npoles(2),1,1)
-          if (pars%davidson) then
-            call ga_add_patch(1d0,pars%g_amb,pars%npoles(1)+1,npoles,
-     &                        ipole,ipole,
-     &                        1d0,g_xy(2),1,pars%npoles(2),1,1,
-     &                            g_xy(2),1,pars%npoles(2),1,1)
-          endif
+          call ga_copy_patch('n', pars%g_apb, pars%npoles(1)+1, npoles,
+     &                        ipole, ipole, g_x(2), 1, pars%npoles(2), 
+     $                        1, 1)
         endif
-        call tddft_transfm(1,g_xy,pars%g_movecs,nbf_ao,pars%nocc,
-     &                    (/pars%nmo,pars%nmo/),0,0,pars%ipol,g_td,1)
+        call tddft_transfm(1, g_x, pars%g_movecs, nbf_ao, pars%nocc,
+     &                    (/pars%nmo, pars%nmo/), 0, 0, pars%ipol,
+     $                     g_td, 1)
+        call ga_transpose(g_td(1), g_tdtot(1))
+        if (pars%ipol.gt.1) call ga_transpose(g_td(2), g_tdtot(2))
+
+        if (pars%davidson) then
+          call ga_copy_patch('n', pars%g_amb, 1, pars%npoles(1), ipole,
+     $                        ipole, g_y(1), 1, pars%npoles(1), 1, 1)
+          if (pars%ipol.gt.1) then
+            call ga_copy_patch('n', pars%g_amb, pars%npoles(1)+1, 
+     &                          npoles, ipole, ipole, g_y(2), 1, 
+     $                          pars%npoles(2), 1, 1)
+          endif
+          call tddft_transfm(1, g_y, pars%g_movecs, nbf_ao, pars%nocc,
+     &                      (/pars%nmo, pars%nmo/), 0, 0, pars%ipol, 
+     $                       g_td, 1)
+          call ga_add(1.0d0, g_td(1), 1.0d0, g_tdtot(1), g_td(1))
+          if (pars%ipol.gt.1) 
+     $      call ga_add(1.0d0, g_td(2), 1.0d0, g_tdtot(2), g_td(2))
+        else
+          call ga_copy(g_tdtot(1), g_td(1))
+          if (pars%ipol.gt.1)
+     $      call ga_copy(g_tdtot(2), g_td(2))
+        endif
+
 
         do i=1,pars%ipol
           call multipole_density(ao_bas_han,origin,3,g_td(i),moms,20)
@@ -435,7 +460,13 @@
       do i=1,pars%ipol
         if (.not.ga_destroy(g_td(i)))
      &  call errquit('bse_oscstr: ga_destroy failed',0,GA_ERR)
+        if (.not.ga_destroy(g_tdtot(i)))
+     &  call errquit('bse_oscstr: ga_destroy failed',0,GA_ERR)
         if (.not.ga_destroy(g_xy(i)))
+     &  call errquit('bse_oscstr: ga_destroy failed',0,GA_ERR)
+        if (.not.ga_destroy(g_x(i)))
+     &  call errquit('bse_oscstr: ga_destroy failed',0,GA_ERR)
+        if (.not.ga_destroy(g_y(i)))
      &  call errquit('bse_oscstr: ga_destroy failed',0,GA_ERR)
       enddo
       if(.not.(ga_destroy(g_dipx).and.ga_destroy(g_dipy).and.
@@ -473,12 +504,12 @@
      1  i5,1x,a5,1x,a4,f8.5,' Y')
  9180 format(2x,'    <S2> = ',f8.4)
  9190 format(2x,'   D<S2> = ',f8.4)
- 9300 format(2x,'     Sigma_e = ',f8.4, ' Angstrom')
- 9310 format(2x,'     sigma_h = ',f8.4, ' Angstrom')
- 9320 format(2x,'    |d_h->e| = ',f8.4, ' Angstrom')
- 9330 format(2x,'       d_exc = ',f8.4, ' Angstrom')
- 9350 format(2x,'Pearson C.C. = ',f8.4)
- 9340 format(2x,'Exciton norm = ',f8.4)
+ 9300 format(5x,'     sigma_e = ',f8.4, ' Angstrom')
+ 9310 format(5x,'     sigma_h = ',f8.4, ' Angstrom')
+ 9320 format(5x,'    |d_h->e| = ',f8.4, ' Angstrom')
+ 9330 format(5x,'       d_exc = ',f8.4, ' Angstrom')
+ 9350 format(5x,'Pearson C.C. = ',f8.4)
+ 9340 format(5x,'Exciton norm = ',f8.4)
  
 
 
