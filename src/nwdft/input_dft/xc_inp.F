@@ -153,7 +153,7 @@ c
 c     r2scan0 ==> 19
 c
       integer num_dirs, ind, mlen, iline, n, itemp
-      parameter (num_dirs=168)
+      parameter (num_dirs=200)
 c
       character*15 dirs(num_dirs)
       character*255 test
@@ -212,7 +212,19 @@ c
      &     'xscan', 'cscan',
      &     'hcth147@tz2p',
      W     'wb97','wb97x','wb97x-d3', 
-     &     'xr2scan', 'cr2scan','r2scan0' /
+     &     'xr2scan', 'cr2scan','r2scan0',
+     &     'xpcdscan','cpcdscan','pcdscan',
+     &     'xcrdscan','ccrdscan','crdscan',
+     &     'xtfldscan','ctfldscan','tfldscan',
+     &     'xtanhdscan','ctfldscan','tanhdscan',
+     &     'xpcdtpss','cpcdtpss','pcdtpss',
+     &     'xcrdtpss','ccrdtpss','crdtpss',
+     &     'xtfldtpss','ctfldtpss','tfldtpss',
+     &     'xtanhdtpss','ctfldtpss','tanhdtpss',
+     &     'xpcdmvs','pcdmvs',
+     &     'xcrdmvs','crdmvs',
+     &     'xtfldmvs','tfldmvs',
+     &     'xtanhdmvs','tanhdmvs'/
 c     becke97-d, ssb-d
       logical disp, dumdirect
       integer ivdw
@@ -299,6 +311,18 @@ c
      &  1947,
      &  9410,9420,9430,
      &  9661,9662,9670, 
+     $  9920,9921,9922,
+     $  9923,9924,9925,
+     $  9926,9927,9928,
+     $  9929,9930,9931,
+     $  9940,9941,9942,
+     $  9943,9944,9945,
+     $  9946,9947,9948,
+     $  9949,9950,9951,
+     $  9960,9961,
+     $  9962,9963,
+     $  9964,9965,
+     $  9966,9967,
      &     1999 ) ind
 
 
@@ -1867,6 +1891,637 @@ c
        lxfac(1) = .true.
       nlxfac(1) = .true.
       goto 10
+c
+c P&C Deorbitalized SCAN
+c
+ 9920 if (inp_a(test)) then
+        if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xpcdscan "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xpcdscan "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(100) = .true.
+           nlxfac(100) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(100) = .true.
+         nlxfac(100) = .true.
+      endif
+      if (.not. inp_f(xfac(100))) then
+         xfac(100) = 1.0d0
+      endif
+      goto 10
+c
+ 9921 if (inp_a(test)) then
+        if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' cpcdscan is a nonlocal functional. '
+          write(LuOut,*)' Resubmit without local descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' cpcdscan cannot be split. '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lcfac(100) = .true.
+           nlcfac(100) = .true.
+           call inp_prev_field()
+         endif
+      else
+        lcfac(100) = .true.
+        nlcfac(100) = .true.
+      endif
+      if (.not. inp_f(cfac(100))) then
+         cfac(100) = 1.0d0
+      endif
+      goto 10
+c
+ 9922 xccomb(100) = .true.
+       lcfac(100) = .true.
+      nlcfac(100) = .true.
+        cfac(100) = 1.0d0
+       lxfac(100) = .true.
+      nlxfac(100) = .true.
+        xfac(100) = 1.0d0
+      goto 10
+c
+c C&R Deorbitalized SCAN
+c
+ 9923 if (inp_a(test)) then
+        if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xcrdscan "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xcrdscan "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(101) = .true.
+           nlxfac(101) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(101) = .true.
+         nlxfac(101) = .true.
+      endif
+      if (.not. inp_f(xfac(101))) then
+         xfac(101) = 1.0d0
+      endif
+      goto 10
+c
+ 9924 if (inp_a(test)) then
+        if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' ccrdscan is a nonlocal functional. '
+          write(LuOut,*)' Resubmit without local descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' ccrdscan cannot be split. '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lcfac(101) = .true.
+           nlcfac(101) = .true.
+           call inp_prev_field()
+         endif
+      else
+        lcfac(101) = .true.
+        nlcfac(101) = .true.
+      endif
+      if (.not. inp_f(cfac(101))) then
+         cfac(101) = 1.0d0
+      endif
+      goto 10
+c
+ 9925 xccomb(101) = .true.
+       lcfac(101) = .true.
+      nlcfac(101) = .true.
+        cfac(101) = 1.0d0
+       lxfac(101) = .true.
+      nlxfac(101) = .true.
+        xfac(101) = 1.0d0
+      goto 10
+c
+c TFL Deorbitalized SCAN
+c
+ 9926 if (inp_a(test)) then
+        if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xtfldscan "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xtfldscan "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(102) = .true.
+           nlxfac(102) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(102) = .true.
+         nlxfac(102) = .true.
+      endif
+      if (.not. inp_f(xfac(102))) then
+         xfac(102) = 1.0d0
+      endif
+      goto 10
+c
+ 9927 if (inp_a(test)) then
+        if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' ctfldscan is a nonlocal functional. '
+          write(LuOut,*)' Resubmit without local descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' ctfldscan cannot be split. '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lcfac(102) = .true.
+           nlcfac(102) = .true.
+           call inp_prev_field()
+         endif
+      else
+        lcfac(102) = .true.
+        nlcfac(102) = .true.
+      endif
+      if (.not. inp_f(cfac(102))) then
+         cfac(102) = 1.0d0
+      endif
+      goto 10
+c
+ 9928 xccomb(102) = .true.
+       lcfac(102) = .true.
+      nlcfac(102) = .true.
+        cfac(102) = 1.0d0
+       lxfac(102) = .true.
+      nlxfac(102) = .true.
+        xfac(102) = 1.0d0
+      goto 10
+c
+c TANH Deorbitalized SCAN
+c
+ 9929 if (inp_a(test)) then
+        if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xtanhdscan "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xtanhdscan "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(103) = .true.
+           nlxfac(103) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(103) = .true.
+         nlxfac(103) = .true.
+      endif
+      if (.not. inp_f(xfac(103))) then
+         xfac(103) = 1.0d0
+      endif
+      goto 10
+c
+ 9930 if (inp_a(test)) then
+        if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' ctanhdscan is a nonlocal functional. '
+          write(LuOut,*)' Resubmit without local descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' ctanhdscan cannot be split. '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lcfac(103) = .true.
+           nlcfac(103) = .true.
+           call inp_prev_field()
+         endif
+      else
+        lcfac(103) = .true.
+        nlcfac(103) = .true.
+      endif
+      if (.not. inp_f(cfac(103))) then
+         cfac(103) = 1.0d0
+      endif
+      goto 10
+c
+ 9931 xccomb(103) = .true.
+       lcfac(103) = .true.
+      nlcfac(103) = .true.
+        cfac(103) = 1.0d0
+       lxfac(103) = .true.
+      nlxfac(103) = .true.
+        xfac(103) = 1.0d0
+      goto 10
+c
+c P&C Deorbitalized TPSS
+c
+ 9940 if (inp_a(test)) then
+         if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xpcdtpss "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xpcdtpss "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(104) = .true.
+           nlxfac(104) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(104) = .true.
+         nlxfac(104) = .true.
+      endif
+      if (.not. inp_f(xfac(104))) then
+         xfac(104) = 1.0d0
+      endif
+      goto 10
+c
+ 9941 if (inp_a(test)) then
+         if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' cpcdtpss is a nonlocal functional. '
+          write(LuOut,*)' Resubmit without local descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' cpcdtpss cannot be split. '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lcfac(104) = .true.
+           nlcfac(104) = .true.
+           call inp_prev_field()
+         endif
+      else
+        lcfac(104) = .true.
+        nlcfac(104) = .true.
+      endif
+      if (.not. inp_f(cfac(104))) then
+         cfac(104) = 1.0d0
+      endif
+      goto 10
+c
+ 9942 xccomb(104) = .true.
+       lcfac(104) = .true.
+      nlcfac(104) = .true.
+        cfac(104) = 1.0d0
+       lxfac(104) = .true.
+      nlxfac(104) = .true.
+        xfac(104) = 1.0d0
+      goto 10
+c
+c C&R Deorbitalized TPSS
+c
+ 9943 if(inp_a(test))then
+          if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xcrdtpss "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xcrdtpss "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(105) = .true.
+           nlxfac(105) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(105) = .true.
+         nlxfac(105) = .true.
+      endif
+      if (.not. inp_f(xfac(105))) then
+         xfac(105) = 1.0d0
+      endif
+      goto 10
+c
+ 9944 if (inp_a(test)) then
+         if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' ccrdtpss is a nonlocal functional. '
+          write(LuOut,*)' Resubmit without local descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' ccrdtpss cannot be split. '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lcfac(105) = .true.
+           nlcfac(105) = .true.
+           call inp_prev_field()
+         endif
+      else
+        lcfac(105) = .true.
+        nlcfac(105) = .true.
+      endif
+      if (.not. inp_f(cfac(105))) then
+         cfac(105) = 1.0d0
+      endif
+      goto 10
+c
+ 9945 xccomb(105) = .true.
+       lcfac(105) = .true.
+      nlcfac(105) = .true.
+        cfac(105) = 1.0d0
+       lxfac(105) = .true.
+      nlxfac(105) = .true.
+        xfac(105) = 1.0d0
+      goto 10
+cgoto 10
+c
+c TFL Deorbitalized TPSS
+c
+ 9946 if(inp_a(test))then
+          if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xtfldtpss "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xtfldtpss "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(106) = .true.
+           nlxfac(106) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(106) = .true.
+         nlxfac(106) = .true.
+      endif
+      if (.not. inp_f(xfac(106))) then
+         xfac(106) = 1.0d0
+      endif
+      goto 10
+c
+ 9947 if (inp_a(test)) then
+         if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' ctfldtpss is a nonlocal functional. '
+          write(LuOut,*)' Resubmit without local descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' ctfldtpss cannot be split. '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lcfac(106) = .true.
+           nlcfac(106) = .true.
+           call inp_prev_field()
+         endif
+      else
+        lcfac(106) = .true.
+        nlcfac(106) = .true.
+      endif
+      if (.not. inp_f(cfac(106))) then
+         cfac(106) = 1.0d0
+      endif
+      goto 10
+c
+ 9948 xccomb(106) = .true.
+       lcfac(106) = .true.
+      nlcfac(106) = .true.
+        cfac(106) = 1.0d0
+       lxfac(106) = .true.
+      nlxfac(106) = .true.
+        xfac(106) = 1.0d0
+      goto 10
+cgoto 10
+c
+c TANH Deorbitalized TPSS
+c
+ 9949 if(inp_a(test))then
+          if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xtanhdtpss "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xtanhdtpss "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(107) = .true.
+           nlxfac(107) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(107) = .true.
+         nlxfac(107) = .true.
+      endif
+      if (.not. inp_f(xfac(107))) then
+         xfac(107) = 1.0d0
+      endif
+      goto 10
+c
+ 9950 if (inp_a(test)) then
+         if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' ctanhdtpss is a nonlocal functional. '
+          write(LuOut,*)' Resubmit without local descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' ctanhdtpss cannot be split. '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lcfac(107) = .true.
+           nlcfac(107) = .true.
+           call inp_prev_field()
+         endif
+      else
+        lcfac(107) = .true.
+        nlcfac(107) = .true.
+      endif
+      if (.not. inp_f(cfac(107))) then
+         cfac(107) = 1.0d0
+      endif
+      goto 10
+c
+ 9951 xccomb(107) = .true.
+       lcfac(107) = .true.
+      nlcfac(107) = .true.
+        cfac(107) = 1.0d0
+       lxfac(107) = .true.
+      nlxfac(107) = .true.
+        xfac(107) = 1.0d0
+      goto 10
+c
+c P&C Deorbitalized MVS
+c
+ 9960 if(inp_a(test))then
+          if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xpcdmvs "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xpcdmvs "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(108) = .true.
+           nlxfac(108) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(108) = .true.
+         nlxfac(108) = .true.
+      endif
+      if (.not. inp_f(xfac(108))) then
+         xfac(108) = 1.0d0
+      endif
+      goto 10
+c
+ 9961 xccomb(108) = .true.
+       lcfac(108) = .false.
+      nlcfac(108) = .true.
+        cfac(108) = 1.0d0
+       lcfac(6) = .true.
+      nlcfac(6) = .false.
+        cfac(6) = 1.0d0
+       lxfac(108) = .true.
+      nlxfac(108) = .true.
+        xfac(108) = 1.0d0
+      goto 10
+c
+c C&R Deorbitalized MVS
+c
+ 9962 if(inp_a(test))then
+          if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xcrdmvs "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xcrdmvs "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(109) = .true.
+           nlxfac(109) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(109) = .true.
+         nlxfac(109) = .true.
+      endif
+      if (.not. inp_f(xfac(109))) then
+         xfac(109) = 1.0d0
+      endif
+      goto 10
+c
+ 9963 xccomb(109) = .true.
+       lcfac(109) = .false.
+      nlcfac(109) = .true.
+        cfac(109) = 1.0d0
+       lcfac(6) = .true.
+      nlcfac(6) = .false.
+        cfac(6) = 1.0d0
+       lxfac(109) = .true.
+      nlxfac(109) = .true.
+        xfac(109) = 1.0d0
+      goto 10
+c
+c TFL Deorbitalized MVS
+c
+ 9964 if(inp_a(test))then
+          if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xtfldmvs "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xtfldmvs "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(110) = .true.
+           nlxfac(110) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(110) = .true.
+         nlxfac(110) = .true.
+      endif
+      if (.not. inp_f(xfac(110))) then
+         xfac(110) = 1.0d0
+      endif
+      goto 10
+c
+ 9965 xccomb(110) = .true.
+       lcfac(110) = .false.
+      nlcfac(110) = .true.
+        cfac(110) = 1.0d0
+       lcfac(6) = .true.
+      nlcfac(6) = .false.
+        cfac(6) = 1.0d0
+       lxfac(110) = .true.
+      nlxfac(110) = .true.
+        xfac(110) = 1.0d0
+      goto 10
+c
+c TANH Deorbitalized MVS
+c
+ 9966 if(inp_a(test))then
+          if (inp_compare(.false.,'local', test)) then
+          write(LuOut,*)' xtanhdmvs "local" is equivalent to the',
+     &                  ' slater exchange local functional. '
+          write(LuOut,*)' Resubmit using only slater exchange. '
+          call errquit(' xc_inp - functional description ',0,0)
+        elseif (inp_compare(.false.,'nonlocal', test) ) then
+          write(LuOut,*)' xtanhdmvs "nonlocal" is not defined',
+     &                  ' for the metaGGA '
+          write(LuOut,*)' Resubmit without nonlocal descriptor. '
+          call errquit(' xc_inp - functional description ',0,0)
+         else
+           lxfac(111) = .true.
+           nlxfac(111) = .true.
+           call inp_prev_field()
+         endif
+      else
+         lxfac(111) = .true.
+         nlxfac(111) = .true.
+      endif
+      if (.not. inp_f(xfac(111))) then
+         xfac(111) = 1.0d0
+      endif
+      goto 10
+c
+ 9967 xccomb(111) = .true.
+       lcfac(111) = .false.
+      nlcfac(111) = .true.
+        cfac(111) = 1.0d0
+       lcfac(6) = .true.
+      nlcfac(6) = .false.
+        cfac(6) = 1.0d0
+       lxfac(111) = .true.
+      nlxfac(111) = .true.
+        xfac(111) = 1.0d0
+      goto 10
+cc DMR/End
 c
 c lb94 Vxc function
 c fill only x here, no c

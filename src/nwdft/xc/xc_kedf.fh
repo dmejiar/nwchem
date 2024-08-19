@@ -1,0 +1,5 @@
+c
+c     xc kedf
+c
+      double precision amgga,bmgga,adeorb,bdeorb
+      common /deorb/ amgga,bmgga,adeorb,bdeorb

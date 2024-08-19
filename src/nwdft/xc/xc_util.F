@@ -48,6 +48,14 @@ c
      x     xfac(80) + cfac(80) + xfac(81) + cfac(81) +
      n     cfac(82) + xfac(82) + cfac(83) + xfac(83) +
      c     cfac(84) + xfac(84) + cfac(85) + xfac(85) +
+c
+     D     xfac(100) + xfac(101) + xfac(102) + xfac(103) +
+     D     xfac(104) + xfac(105) + xfac(106) + xfac(107) +
+     D     xfac(108) + xfac(109) + xfac(110) + xfac(111) +
+     D     cfac(100) + cfac(101) + cfac(102) + cfac(103) +
+     D     cfac(104) + cfac(105) + cfac(106) + cfac(107) +
+     D     cfac(108) + cfac(109) + cfac(110) + cfac(111) +
+
      L     lxdm +
 cc AJL/Begin/FDE
      + xfac_fde(3) + xfac_fde(4) + xfac_fde(5) + xfac_fde(6) + 
@@ -218,6 +226,19 @@ cwb97 should have 2nds
      .     xfac(84).ne.0d0.or.
      .     xfac(85).ne.0d0.or.
 c
+     .     xfac(100).ne.0d0.or.
+     .     xfac(101).ne.0d0.or.
+     .     xfac(102).ne.0d0.or.
+     .     xfac(103).ne.0d0.or.
+     .     xfac(104).ne.0d0.or.
+     .     xfac(105).ne.0d0.or.
+     .     xfac(106).ne.0d0.or.
+     .     xfac(107).ne.0d0.or.
+     .     xfac(108).ne.0d0.or.
+     .     xfac(109).ne.0d0.or.
+     .     xfac(110).ne.0d0.or.
+     .     xfac(111).ne.0d0.or.
+c
 chcth     .     cfac(13).ne.0d0.or.
 cCbecke97     .     cfac(14).ne.0d0.or.
 cCB97-1     .     cfac(15).ne.0d0.or.
@@ -263,6 +284,16 @@ cwb97 should have 2nds
      .     cfac(83).ne.0d0.or.
      .     cfac(84).ne.0d0.or.
      .     cfac(85).ne.0d0.or.
+c
+     .     cfac(67).ne.0d0.or.
+     .     cfac(68).ne.0d0.or.
+     .     cfac(69).ne.0d0.or.
+     .     cfac(70).ne.0d0.or.
+     .     cfac(71).ne.0d0.or.
+     .     cfac(72).ne.0d0.or.
+     .     cfac(73).ne.0d0.or.
+     .     cfac(74).ne.0d0.or.
+c
      .     cfac(36).ne.0d0)
       if (util_module_avail("nwxc")) then
          call nwxc_getvals("nwxc_has_2nd",out1)
@@ -307,6 +338,12 @@ c
      +      xfac(79) + cfac(79) + xfac(80) + cfac(80) +
      +      xfac(81) + cfac(81) + xfac(83) + cfac(83) +
      +      xfac(84) + cfac(84) + xfac(85) + cfac(85) +
+c
+     +      xfac(100) + xfac(101) + xfac(102) + xfac(103) +
+     +      xfac(104) + xfac(105) + xfac(106) + xfac(107) +
+     +      xfac(108) + xfac(109) + xfac(110) + xfac(111) +
+     +      cfac(100) + cfac(101) + cfac(102) + cfac(103) +
+     +      cfac(104) + cfac(105) + cfac(106) + cfac(107) +
 cc AJL/Begin/FDE
      +      xfac_fde(18) + cfac_fde(25) + xfac_fde(21) + cfac_fde(27) +
      +      xfac_fde(28) + xfac_fde(29) + xfac_fde(33) + xfac_fde(34) + 
@@ -333,6 +370,33 @@ c
       xc_chktau = xc_chktau .or. out1
       return
       end
+c
+cc DMR/Begin/DEORB
+      logical function xc_getdeorb(rtdb)
+      implicit none
+      integer rtdb
+c     load amgga,bmgga,adeorb and bdeorb into cdft.fh
+#include "cdft.fh"
+#include "rtdb.fh"
+#include "mafdecls.fh"
+#include "util.fh"
+c
+      xc_getdeorb=rtdb_get(rtdb, 'dft:amgga', mt_dbl, 1,
+     &amgga)
+      xc_getdeorb=xc_getdeorb.and.
+     A     rtdb_get(rtdb, 'dft:bmgga', mt_dbl, 1,
+     &     bmgga)
+      xc_getdeorb=xc_getdeorb.and.
+     A     rtdb_get(rtdb, 'dft:adeorb', mt_dbl, 1,
+     &     adeorb)
+      xc_getdeorb=xc_getdeorb.and.
+     A     rtdb_get(rtdb, 'dft:bdeorb', mt_dbl, 1,
+     &     bdeorb)
+
+
+      return
+      end
+cc DMR/End
 c
       logical function xc_getxcfac(rtdb)
       implicit none
@@ -646,7 +710,20 @@ C
       double precision tot,eps
       parameter(eps=1.d-10)
       external nwchem_libxc_family
-      tot = xfac(67) + cfac(67) + xfac(74) + cfac(74)
+      tot = xfac(67) + cfac(67) + xfac(74) + cfac(74) +
+     .      xfac(100) + cfac(100) +
+     .      xfac(101) + cfac(101) +
+     .      xfac(102) + cfac(102) +
+     .      xfac(103) + cfac(103) +
+     .      xfac(104) + cfac(104) +
+     .      xfac(105) + cfac(105) +
+     .      xfac(106) + cfac(106) +
+     .      xfac(107) + cfac(107) +
+     .      xfac(108) +
+     .      xfac(109) +
+     .      xfac(110) +
+     .      xfac(111)
+
 
       if (abs(tot).gt.eps) then
         xc_chklap = .true.

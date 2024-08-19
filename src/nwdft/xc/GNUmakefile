@@ -1,6 +1,6 @@
 # $Id$
 
-HEADERS = xc.fh xc_vdw.fh xc_params.fh xc_hcth.fh
+HEADERS = xc.fh xc_vdw.fh xc_params.fh xc_hcth.fh xc_kedf.fh
 
 	OBJ = xc_getv.o \
 	xc_getvxc.o \
@@ -58,7 +58,10 @@ HEADERS = xc.fh xc_vdw.fh xc_params.fh xc_hcth.fh
 	xc_xscan.o xc_cscan.o xc_xscanl.o xc_cscanl.o ts_pc.o\
 	xc_xncap.o xc_xncap.o xc_xr2scan.o xc_xr2scanl.o\
 	xc_cr2scan.o xc_cr2scanl.o xc_hcth_extra.o \
-	xc_rhogen_adft.o xc_tabcd_adft.o
+	xc_rhogen_adft.o xc_tabcd_adft.o \
+	xc_xdscan.o xc_cdscan.o \
+	xc_xdtpss03.o xc_cdtpss03.o xc_xdmvs15.o \
+	ts_mgga.o ts_mapbek.o ts_cr.o ts_tanh.o ts_tfl.o
 
 	VDW_OBJ= xc_vdw_main.o xc_vdw_util.o
 

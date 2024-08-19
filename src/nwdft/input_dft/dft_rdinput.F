@@ -241,6 +241,33 @@ c
      &       RTDB_ERR)
       endif
 c
+cc DMR/Begin/DEORB
+      if (.not.rtdb_get(rtdb, 'dft:amgga', mt_dbl, 1, amgga))then
+        amgga = 1.78472d0
+        if(.not.rtdb_put(rtdb, 'dft:amgga', mt_dbl, 1, amgga))
+     &  call errquit('dft_rdinput: rtdb_put failed', 105,RTDB_ERR)
+      endif
+c
+c
+      if (.not.rtdb_get(rtdb, 'dft:bmgga', mt_dbl, 1, bmgga))then
+        bmgga = 0.258304d0
+        if(.not.rtdb_put(rtdb, 'dft:bmgga', mt_dbl, 1, bmgga))
+     &  call errquit('dft_rdinput: rtdb_put failed', 105,RTDB_ERR)
+      endif
+c
+      if (.not.rtdb_get(rtdb, 'dft:adeorb', mt_dbl, 1, adeorb))then
+        adeorb = -0.295491d0
+        if(.not.rtdb_put(rtdb, 'dft:adeorb', mt_dbl, 1, adeorb))
+     &  call errquit('dft_rdinput: rtdb_put failed', 105,RTDB_ERR)
+      endif
+c
+      if (.not.rtdb_get(rtdb, 'dft:bdeorb', mt_dbl, 1, bdeorb))then
+        bdeorb = 2.61574d0
+        if(.not.rtdb_put(rtdb, 'dft:bdeorb', mt_dbl, 1, bdeorb))
+     &  call errquit('dft_rdinput: rtdb_put failed', 105,RTDB_ERR)
+      endif
+cc DMR/End
+c
       if (.not. rtdb_get(rtdb, 'dft:e_conv', mt_dbl, 1, e_conv))then
          e_conv=1.d-6
          if (.not. rtdb_put(rtdb, 'dft:e_conv', mt_dbl, 1, e_conv))
@@ -622,6 +649,15 @@ c
       cname(83)='            MN15-L Correlation Potential'
       cname(84)='              MN15 Correlation Potential'
       cname(85)='            M06-SX Correlation Potential'
+c      
+      cname(100)='   P&C Deorb. SCAN Correlation Potential'
+      cname(101)='   C&R Deorb. SCAN Correlation Potential'
+      cname(102)='   TFL Deorb. SCAN Correlation Potential'
+      cname(103)='  TANH Deorb. SCAN Correlation Potential'
+      cname(104)='   P&C Deorb. TPSS Correlation Potential'
+      cname(105)='   C&R Deorb. TPSS Correlation Potential'
+      cname(106)='   TFL Deorb. TPSS Correlation Potential'
+      cname(107)='  TANH Deorb. TPSS Correlation Potential'
 c
 c     Exchange functional name defaults.
 c
@@ -704,6 +740,19 @@ c
       xname(84)='                MN15 Exchange Functional'
       xname(85)='              M06-SX Exchange Functional'
 c
+      xname(100)='     P&C Deorb. SCAN Exchange Functional'
+      xname(101)='     C&R Deorb. SCAN Exchange Functional'
+      xname(102)='     TFL Deorb. SCAN Exchange Functional'
+      xname(103)='    TANH Deorb. SCAN Exchange Functional'
+      xname(104)='     P&C Deorb. TPSS Exchange Functional'
+      xname(105)='     C&R Deorb. TPSS Exchange Functional'
+      xname(106)='     TFL Deorb. TPSS Exchange Functional'
+      xname(107)='    TANH Deorb. TPSS Exchange Functional'
+      xname(108)='      P&C Deorb. MVS Exchange Functional'
+      xname(109)='      C&R Deorb. MVS Exchange Functional'
+      xname(110)='      TFL Deorb. MVS Exchange Functional'
+      xname(111)='     TANH Deorb. MVS Exchange Functional'
+c
 c     Exchange-Correlation combination functional name defaults.
 c
       xcname(1)='Adiabatic Connection Method XC Potential'
@@ -785,6 +834,19 @@ c
       xcname(84)='               MN15 Method XC Functional'
       xcname(85)='             M06-SX Method XC Functional'
       xcname(86)='           r^2SCAN0 Method XC Functional'
+c
+      xcname(100)='    P&C Deorb. SCAN Method XC Functional'
+      xcname(101)='    C&R Deorb. SCAN Method XC Functional'
+      xcname(102)='    TFL Deorb. SCAN Method XC Functional'
+      xcname(103)='   TANH Deorb. SCAN Method XC Functional'
+      xcname(104)='    P&C Deorb. TPSS Method XC Functional'
+      xcname(105)='    C&R Deorb. TPSS Method XC Functional'
+      xcname(106)='    TFL Deorb. TPSS Method XC Functional'
+      xcname(107)='   TANH Deorb. TPSS Method XC Functional'
+      xcname(108)='     P&C Deorb. MVS Method XC Functional'
+      xcname(109)='     C&R Deorb. MVS Method XC Functional'
+      xcname(110)='     TFL Deorb. MVS Method XC Functional'
+      xcname(111)='    TANH Deorb. MVS Method XC Functional'
 c     
 c     place character XC parameters in rtdb
 c     

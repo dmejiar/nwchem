@@ -89,6 +89,9 @@ c
 c
       character*4 whichf
 
+      logical dodscan,dodtpss,dodmvs
+      character*4 whichk
+
       logical do_2nd, do_3rd
       logical ldew, ldew2, ldew3
 cc AJL/Unused
@@ -1932,6 +1935,165 @@ c
             call xc_cr2scanl_d2()
          endif
       endif
+
+c
+c     Deorbitalized SCAN Exchange
+c
+      dodscan=.false.
+      if (abs(xfac(100)).gt.eps) then
+        dodscan = .true.
+        whichk = 'pc'
+        nx = 100
+      else if (abs(xfac(101)).gt.eps) then
+        dodscan = .true.
+        whichk = 'cr'
+        nx = 101
+      else if (abs(xfac(102)).gt.eps) then
+        dodscan = .true.
+        whichk = 'tfl'
+        nx = 102
+      else if (abs(xfac(103)).gt.eps) then
+        dodscan = .true.
+        whichk = 'tanh'
+        nx = 103
+      end if
+
+      if (dodscan) then
+        if (.not. do_2nd) then
+          call xc_xdscan(tol_rho, xfac(nx), rho, delrho, Amat, Cmat,
+     &                  nq, ipol, Ex, qwght, ldew, func, ttau, Mmat,
+     &                  laprho, Lmat, whichk)
+        else
+          call xc_xdscan_d2()
+        end if
+      end if
+c
+c     SCAN correlation
+c
+      dodscan=.false.
+      if (abs(cfac(100)).gt.eps) then
+        dodscan = .true.
+        whichk = 'pc'
+        nc = 100
+      else if (abs(cfac(101)).gt.eps) then
+        dodscan = .true.
+        whichk = 'cr'
+        nc = 101
+      else if (abs(cfac(102)).gt.eps) then
+        dodscan = .true.
+        whichk = 'tfl'
+        nc = 102
+      else if (abs(cfac(103)).gt.eps) then
+        dodscan = .true.
+        whichk = 'tanh'
+        nc = 103
+      end if
+
+      if (dodscan) then
+        if (.not. do_2nd) then
+          call xc_cdscan(tol_rho, cfac(nc), rho, delrho, Amat, Cmat,
+     &                  nq, ipol, Ec, qwght, ldew, func, ttau, Mmat,
+     &                  laprho, Lmat, whichk)
+        else
+          call xc_cdscan_d2()
+        end if
+      end if
+c
+c     Deorbitalized TPSS Exchange
+c
+      dodtpss=.false.
+      if (abs(xfac(104)).gt.eps) then
+        dodtpss = .true.
+        whichk = 'pc'
+        nx = 104
+      else if (abs(xfac(105)).gt.eps) then
+        dodtpss = .true.
+        whichk = 'cr'
+        nx = 105
+      else if (abs(xfac(106)).gt.eps) then
+        dodtpss = .true.
+        whichk = 'tfl'
+        nx = 106
+      else if (abs(xfac(107)).gt.eps) then
+        dodtpss = .true.
+        whichk = 'tanh'
+        nx = 107
+      end if
+
+      if (dodtpss) then
+        if (.not. do_2nd) then
+          call xc_xdtpss03(tol_rho, xfac(nx), rho, delrho, Amat, Cmat,
+     &                  nq, ipol, Ex, qwght, ldew, func, ttau, Mmat,
+     &                  laprho, Lmat, whichk)
+        else
+          call xc_xdtpss03_d2()
+        end if
+      end if
+c
+c     TPSS correlation
+c
+      dodtpss=.false.
+      if (abs(cfac(104)).gt.eps) then
+        dodtpss = .true.
+        whichk = 'pc'
+        nc = 104
+      else if (abs(cfac(105)).gt.eps) then
+        dodtpss = .true.
+        whichk = 'cr'
+        nc = 105
+      else if (abs(cfac(106)).gt.eps) then
+        dodtpss = .true.
+        whichk = 'tfl'
+        nc = 106
+      else if (abs(cfac(107)).gt.eps) then
+        dodtpss = .true.
+        whichk = 'tanh'
+        nc = 107
+      end if
+
+      if (dodtpss) then
+        if (.not. do_2nd) then
+          call xc_cdtpss03(tol_rho, cfac(nc), lcfac(nc), nlcfac(nc),
+     &                  rho, delrho, 
+     &                  nq, ipol, Ec, qwght, ldew, func, ttau, Amat,
+     &                  Cmat, Mmat, laprho, Lmat, whichk)
+        else
+          call xc_cdtpss03_d2()
+        end if
+      end if
+c
+c     Deorbitalized MVS Exchange
+c
+      dodmvs=.false.
+      if (abs(xfac(108)).gt.eps) then
+        dodmvs = .true.
+        whichk = 'pc'
+        nx = 108
+      else if (abs(xfac(109)).gt.eps) then
+        dodmvs = .true.
+        whichk = 'cr'
+        nx = 109
+      else if (abs(xfac(110)).gt.eps) then
+        dodmvs = .true.
+        whichk = 'tfl'
+        nx = 110
+      else if (abs(xfac(111)).gt.eps) then
+        dodmvs = .true.
+        whichk = 'tanh'
+        nx = 111
+      end if
+
+      if (dodmvs) then
+        if (.not. do_2nd) then
+          call xc_xdmvs15(tol_rho, xfac(nx), rho, delrho, Amat, Cmat,
+     &                  nq, ipol, Ex, qwght, ldew, func, ttau, Mmat,
+     &                  laprho, Lmat, whichk)
+        else
+          call xc_xdmvs15_d2()
+        end if
+      end if
+
+
 c
 c     libxc potential and energy
 c

@@ -21,6 +21,7 @@ c
 cold      integer numfunc
 cold      parameter(numfunc=65)
 #include "xc.fh"
+#include "xc_kedf.fh"
 cc AJL/Begin/FDE
       integer numfunc_fde
       parameter(numfunc_fde=2)
