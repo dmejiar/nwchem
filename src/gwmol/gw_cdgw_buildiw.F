@@ -227,7 +227,8 @@ c
 #ifdef GWCMPLX
         call ga_zgop(1038,dcpl_mb(k_pi),nri**2,'+')
 #else
-        call ga_dgop(1038,dbl_mb(k_pi),sizepi,'+')
+c        call ga_dgop(1038,dbl_mb(k_pi),sizepi,'+')
+        call util_mygadgop(1038,dbl_mb(k_pi),sizepi,'+')
 #endif
 
 #ifdef GWDEBUG

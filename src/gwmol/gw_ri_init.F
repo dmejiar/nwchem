@@ -273,14 +273,15 @@ c
 c
       if (.not.ma_alloc_get(mt_dbl,nri**2,'RI temporary',l_tmp,k_tmp))
      $  call errquit(pname//'can''t get temp space',0,MA_ERR)
-      if (pars%me.eq.0) then
-        call ga_get(g_2cinv,1,nbf_cd,1,nbf_cd,dbl_mb(k_tmp),nbf_cd)
-      endif
-      call ga_sync()
+      call util_mygabcast(g_2cinv, nri, nri, dbl_mb(k_tmp), nri)
+c      if (pars%me.eq.0) then
+c        call ga_get(g_2cinv, 1, nri, 1, nri, dbl_mb(k_tmp), nri)
+c      endif
+c      call ga_sync()
       if (.not. ga_destroy(g_2cinv))
      $  call errquit(pname//'failed to destroy g_2cinv',0,GA_ERR)
-      call ga_brdcst(1038,dbl_mb(k_tmp),ma_sizeof(mt_dbl,nri**2,
-     $               mt_byte),0)
+c      call ga_brdcst(1038,dbl_mb(k_tmp),ma_sizeof(mt_dbl,nri**2,
+c     $               mt_byte),0)
 
 #ifdef GWDEBUG
       if (pars%me.eq.0) write(*,*) '  Orthogonalize ERIs'

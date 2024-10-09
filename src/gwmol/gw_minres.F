@@ -290,7 +290,8 @@ c       we need an n**2 matrix
         call gw_cdgw_buildpi('r',ov1,ov2,dbl_mb(k_pi),factor,n,n,npoles,
      $                   main,ipol,maxpoles)
         call ga_mask_sync(.true.,.false.)
-        call ga_dgop(1038,dbl_mb(k_pi),(n*(n+1))/2,'+')
+c        call ga_dgop(1038,dbl_mb(k_pi),(n*(n+1))/2,'+')
+        call util_mygadgop(1038,dbl_mb(k_pi),(n*(n+1))/2,'+')
 
 c       Pi is built in rectangular full packed format.
 c       Transform it to standard format.

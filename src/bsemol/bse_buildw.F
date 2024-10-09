@@ -54,7 +54,7 @@ C
       call gw_cdgw_buildpi('w',dbl_mb(kov(1)),dbl_mb(kov(2)),w,factor,
      $                      ldpi,nri,pars%mynpoles,pars%me.eq.0,
      $                      ipol,maxpoles) 
-      call ga_dgop(1038,w,sizepi,'+')
+      call util_mygadgop(1038, w, sizepi, '+')
 
       !Factorize dieletric matrix for further use
       call dpftrf('n','l',nri,w,info)
