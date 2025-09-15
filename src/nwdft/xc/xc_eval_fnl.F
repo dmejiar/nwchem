@@ -1868,6 +1868,22 @@ c
       endif
 c
 
+      if (abs(xfac(88)).gt.eps)then
+         if (.not. do_2nd .and..not. do_3rd) then
+            call xc_xf3(tol_rho, xfac(88), rho,
+     &           delrho, Amat, Cmat, nq, ipol,
+     &           Ex, qwght, ldew, func, ' ')
+         else if (.not. do_3rd) then
+            call xc_xf3_d2(tol_rho, xfac(88), rho,
+     &           delrho, Amat, Amat2, Cmat, Cmat2, nq, ipol,
+     &           Ex, qwght, ldew, func, ' ')
+         else
+            call xc_xf3_d3(tol_rho, xfac(88), rho,
+     &           delrho, Amat, Amat2, Amat3, Cmat, Cmat2, Cmat3,
+     &           nq, ipol, Ex, qwght, ldew, func, ' ')
+         endif
+      endif
+c
       if (abs(xfac(87)).gt.eps)then
          if (.not. do_2nd .and..not. do_3rd) then
             call xc_xncap(tol_rho, xfac(87), rho,

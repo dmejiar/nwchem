@@ -26,7 +26,7 @@
       integer subscript(2)
       double precision minimum,norm(pars%nroots),rdum,factor
 
-      integer inode,nprocs
+      integer inode,nprocs,nrestart
       integer ipole,jpole,itrial,imo,amo,idavidson
       logical found,dohartree,stat,debug
       double precision,external :: dasum
@@ -43,7 +43,7 @@
       maxnpoles = maxval(pars%npoles(1:pars%ipol))
       totnpoles = maxnpoles*pars%ipol
       npoles = sum(pars%npoles(1:pars%ipol))
-      ntrials = pars%nroots
+      ntrials = pars%nroots*pars%nspace
       nprocs = ga_nnodes()
 
       ! allocation
@@ -53,13 +53,17 @@
      &  call errquit(pname//'failed to allocate omega',0,MA_ERR)
       if(.not.ma_push_get(mt_dbl,npoles,'residual',l_r,k_r))
      &  call errquit(pname//'failed to allocate residual',0,MA_ERR)
-      if(.not.ma_push_get(mt_dbl,maxpoles*200,'tmp1',l_tmp1,k_tmp1))
+      if(.not.ma_push_get(mt_dbl,maxpoles*pars%nmax,'tmp1',
+     &                    l_tmp1, k_tmp1))
      &  call errquit(pname//'failed to allocate tmp1',0,MA_ERR)
-      if(.not.ma_push_get(mt_dbl,maxpoles*200,'tmp2',l_tmp2,k_tmp2))
+      if(.not.ma_push_get(mt_dbl,maxpoles*pars%nmax,'tmp2',
+     &                    l_tmp2, k_tmp2))
      &  call errquit(pname//'failed to allocate tmp2',0,MA_ERR)
-      if(.not.ma_push_get(mt_dbl,maxpoles*200,'tmp3',l_tmp3,k_tmp3))
+      if(.not.ma_push_get(mt_dbl,maxpoles*pars%nmax,'tmp3',
+     &                    l_tmp3, k_tmp3))
      &  call errquit(pname//'failed to allocate tmp3',0,MA_ERR)
-      if(.not.ma_push_get(mt_dbl,maxpoles*200,'tmp4',l_tmp4,k_tmp4))
+      if(.not.ma_push_get(mt_dbl,maxpoles*pars%nmax,'tmp4',
+     &                    l_tmp4, k_tmp4))
      &  call errquit(pname//'failed to allocate tmp4',0,MA_ERR)
       if(.not.ma_push_get(mt_int,2*ga_nnodes()+1,'map',l_map,k_map))
      &  call errquit(pname//'failed to allocate map',0,MA_ERR)
@@ -176,10 +180,15 @@
         pars%g_erivv(isp) = g_tmp
       enddo
 
+      ! Start Davidson Algorithm
+      idavidson = 0
+
+      ! Restarts should land here to improve numerics
+    1 continue
+
       ! K-orthogonalization
       call bse_davidson_kvec(pars,g_trials,g_wia,g_x,npoles,
      $                       ntrials,pars%singlet,1d0)
-
 
       call nga_access_block_grid(g_x, (/pars%me,0/), k_x, myld)
       call nga_access_block_grid(g_trials, (/pars%me,0/),k_trials,myld)
@@ -233,14 +242,15 @@
       call ga_copy(g_y,g_ks)
       call ga_copy(g_ym,g_mks)
 
-      if (pars%me.eq.0) then
+      if (pars%me.eq.0 .and. idavidson.eq.0) then
         write(*,*)
         write(*,*) "--------------------------------"
         write(*,*) " Iter  Ntrials  Nconv     Res   "
         write(*,*) "--------------------------------"
       endif
 
-      do idavidson=1,100
+    2 idavidson = idavidson + 1
+      if (idavidson.gt.pars%maxiter) goto 3 
 
         ! Build projected matrix
         call dcopy(ntrials*ntrials,0d0,0,dbl_mb(vkv),1)
@@ -351,14 +361,15 @@
  9010   format(I5,3X,I5,3X,I5,G16.5)
 
         ! All residuals are below the threshold
-        if (ndim.eq.0) exit
+        if (ndim.eq.0) goto 3
 
         ! Restart calculation if dimensions exceeded
         if (ndim+ntrials.gt.pars%nmax) then
-          call bse_davidson_restart(ntrials,pars%nroots,npoles,
-     $          g_x,g_y,g_ym,g_s,g_ks,g_mks,l_vkv,vkv,
+          nrestart = min(ntrials, pars%nroots*pars%nspace)
+          call bse_davidson_restart(ntrials,nrestart,npoles,
+     $          g_x,g_y,g_ym,g_s,g_ks,g_mks,g_trials,l_vkv,vkv,
      $          int_mb(k_map),pars%nblocks)
-          cycle
+          goto 1
         endif
 
         ! Project-out current vectors
@@ -390,20 +401,20 @@
 
 
         ! K-orthogonalization
-        call bse_davidson_kvec(pars,g_w,g_wia,g_kw,npoles,
-     $                         ndim,pars%singlet,1d0)
-        call bse_davidson_kvec(pars,g_kw,g_wia,g_mkw,npoles,
-     $                         ndim,.false.,-1d0)
+        call bse_davidson_kvec(pars, g_w, g_wia, g_kw, npoles,
+     $                         ndim, pars%singlet, 1d0)
+        call bse_davidson_kvec(pars, g_kw, g_wia, g_mkw, npoles,
+     $                         ndim, .false., -1d0)
 
         subscript = (/pars%me,0/)
-        call nga_access_block_grid(g_w,subscript,k_w,myld)
-        call nga_access_block_grid(g_kw,subscript,k_kw,myld)
-        call nga_access_block_grid(g_mkw,subscript,k_mkw,myld)
+        call nga_access_block_grid(g_w, subscript, k_w, myld)
+        call nga_access_block_grid(g_kw, subscript, k_kw, myld)
+        call nga_access_block_grid(g_mkw, subscript, k_mkw, myld)
         if (pars%ipol.eq.1) then
           myld2 = 0
-          call dcopy(ndim*myld,dbl_mb(k_w),1,dbl_mb(k_tmp1),1)
-          call dcopy(ndim*myld,dbl_mb(k_kw),1,dbl_mb(k_tmp2),1)
-          call dcopy(ndim*myld,dbl_mb(k_mkw),1,dbl_mb(k_tmp3),1)
+          call dcopy(ndim*myld, dbl_mb(k_w), 1, dbl_mb(k_tmp1), 1)
+          call dcopy(ndim*myld, dbl_mb(k_kw), 1, dbl_mb(k_tmp2), 1)
+          call dcopy(ndim*myld, dbl_mb(k_mkw), 1, dbl_mb(k_tmp3), 1)
         else
           subscript = (/pars%me+nprocs,0/)
           call nga_access_block_grid(g_w,subscript,k_w2,myld2)
@@ -434,7 +445,7 @@
           call dcopy(mdim*myld,dbl_mb(k_tmp2),1,dbl_mb(k_kw),1)
           call dcopy(mdim*myld,dbl_mb(k_tmp3),1,dbl_mb(k_mkw),1)
         else
-          do itrial=1,ndim
+          do itrial=1,mdim
             call dcopy(myld,dbl_mb(k_tmp1+(itrial-1)*(myld+myld2)),1,
      $         dbl_mb(k_w+(itrial-1)*myld),1)
             call dcopy(myld2,
@@ -461,11 +472,13 @@
 
         ! All trial vectors were linearly-dependent
         ! restart calculation with current best guess
-        if (mdim.lt.2) then
-          call bse_davidson_restart(ntrials,pars%nroots,npoles,
-     $          g_x,g_y,g_ym,g_s,g_ks,g_mks,l_vkv,vkv,int_mb(k_map),
+        if (mdim.lt.3) then
+          nrestart = min(ntrials, pars%nroots*pars%nspace)
+          call bse_davidson_restart(ntrials,nrestart,npoles,
+     $          g_x,g_y,g_ym,g_s,g_ks,g_mks,l_vkv,g_trials,
+     $          vkv,int_mb(k_map),
      $          pars%nblocks)
-          cycle
+          goto 1
         endif
 
         ndim = mdim
@@ -474,8 +487,9 @@
         call bse_davidson_newvecs(ntrials,ndim,npoles,g_x,g_y,g_ym,
      $                            g_s,g_ks,g_mks,g_w,g_kw,g_mkw,
      $                            l_vkv,vkv,int_mb(k_map),pars%nblocks)
+      goto 2
 
-      enddo
+    3 continue 
 
       if(pars%me.eq.0) write(*,*)
 

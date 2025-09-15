@@ -48,6 +48,7 @@ c
      x     xfac(80) + cfac(80) + xfac(81) + cfac(81) +
      n     cfac(82) + xfac(82) + cfac(83) + xfac(83) +
      c     cfac(84) + xfac(84) + cfac(85) + xfac(85) +
+     c     xfac(87) + xfac(88) +
      L     lxdm +
 cc AJL/Begin/FDE
      + xfac_fde(3) + xfac_fde(4) + xfac_fde(5) + xfac_fde(6) + 

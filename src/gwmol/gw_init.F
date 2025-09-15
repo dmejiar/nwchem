@@ -23,14 +23,17 @@ c
 c
       character(len=9), parameter :: pname = 'gw_init: '
       character(len=255) :: basisname, scftype
+      character(len=80) :: dfttheory, theory
 
-      logical init
+      logical init, sodft, status
 c
       logical int_normalize, int_norm_2c
       external int_normalize, int_norm_2c
 c
-      logical movecs_read, movecs_read_header, atom_tag_check
-      external movecs_read, movecs_read_header, atom_tag_check
+      logical movecs_read, movecs_read_header, atom_tag_check,
+     $        movecs_read_header_so
+      external movecs_read, movecs_read_header, atom_tag_check,
+     $         movecs_read_header_so
 
       logical,external :: movecs_write
 c
@@ -80,11 +83,23 @@ c
       pars%iMaxThreads = 1
 #endif
 
+      sodft = .false.
+      if(.not.rtdb_cget(pars%rtdb,'task:theory',1,theory))
+     $  call errquit(pname//'failed to read task theory',0,RTDB_ERR)
+c      if(.not.rtdb_cget(pars%rtdb,'dft:theory',1,dfttheory))
+c     $  call errquit(pname//'failed to read DFT theory',0,RTDB_ERR)
+      if(theory(1:5).eq.'sodft') sodft = .true.
+
       if (.not.rtdb_get(pars%rtdb,'gw:init',mt_log,1,init))
      $  call gw_defaults(pars%rtdb) 
 
-      if (.not.rtdb_get(pars%rtdb,'dft:energy',mt_dbl,1,pars%escf))
-     $  call errquit(pname//'failed to read DFT energy',0,RTDB_ERR) 
+      if(sodft) then
+        if (.not.rtdb_get(pars%rtdb,'sodft:energy',mt_dbl,1,pars%escf))
+     $    call errquit(pname//'failed to read DFT energy',0,RTDB_ERR) 
+      else
+        if (.not.rtdb_get(pars%rtdb,'dft:energy',mt_dbl,1,pars%escf))
+     $    call errquit(pname//'failed to read DFT energy',0,RTDB_ERR) 
+      endif
 
       if (.not.rtdb_get(pars%rtdb, 'gw:eta',mt_dbl,1,pars%eta))
      $  call errquit(pname//'failed to read eta',0,RTDB_ERR)
@@ -210,13 +225,22 @@ c
       if (.not.ma_push_get(mt_dbl,nbf_ao*ipol,'occupancies', pars%l_occ,
      $  pars%k_occ))
      $  call errquit(pname//'failed to allocate occ',0,MA_ERR) 
-      if (.not.movecs_read_header(movecs_out,title,basisname,
+
+      if(sodft) then
+        status = movecs_read_header_so(movecs_out, title, basisname,
+     $                                 scftype, nbf_temp)
+        if (2*nbf_ao.ne.nbf_temp)
+     $    call errquit(pname//'corrupted MO vectors',0,DISK_ERR)
+      else
+        if (.not.movecs_read_header(movecs_out,title,basisname,
      $    scftype,nbf_temp,ipol_temp,nmo_temp,2))
      $    call errquit(pname//'failed to read MO header',0,DISK_ERR)
-      if (nbf_ao.ne.nbf_temp)
-     $  call errquit(pname//'corrupted MO vectors',0,DISK_ERR)
-      if (ipol.ne.ipol_temp)
-     $  call errquit(pname//'corrupted MO vectors',0,DISK_ERR)
+        if (nbf_ao.ne.nbf_temp)
+     $    call errquit(pname//'corrupted MO vectors',0,DISK_ERR)
+        if (ipol.ne.ipol_temp)
+     $    call errquit(pname//'corrupted MO vectors',0,DISK_ERR)
+      endif
+
 
       pars%nmo = nmo_temp(1)
 

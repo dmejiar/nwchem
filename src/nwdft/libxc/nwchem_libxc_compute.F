@@ -97,13 +97,13 @@
       endif
 
       if (kske.or.kslap) then
-          if (.not.(ma_push_get(mt_dbl,size2,'tau',ltau,ktau)))
+          if (.not.(ma_push_get(mt_dbl,size1,'tau',ltau,ktau)))
      $      call errquit(" could not allocate",0,ma_err) 
-          if (.not.(ma_push_get(mt_dbl,size2,'vtau',lvtau,kvtau)))
+          if (.not.(ma_push_get(mt_dbl,size1,'vtau',lvtau,kvtau)))
      $      call errquit(" could not allocate",0,ma_err) 
-          if (.not.(ma_push_get(mt_dbl,size2,'lapl',llapl,klapl)))
+          if (.not.(ma_push_get(mt_dbl,size1,'lapl',llapl,klapl)))
      $      call errquit(" could not allocate",0,ma_err) 
-          if (.not.(ma_push_get(mt_dbl,size2,'vlapl',lvlapl,kvlapl)))
+          if (.not.(ma_push_get(mt_dbl,size1,'vlapl',lvlapl,kvlapl)))
      $      call errquit(" could not allocate",0,ma_err) 
       endif
 

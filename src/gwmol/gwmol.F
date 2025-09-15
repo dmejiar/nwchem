@@ -63,7 +63,12 @@ c
         endif
 c
       elseif (theory.eq.'sodft') then
-        call errquit(pname//"spin-orbit not implemented",0,0)
+        ! call errquit(pname//"spin-orbit not implemented",0,0)
+        if (params%cdgw) then
+          call gw_cdgw(params)
+        else
+          call gw_analytic(params)
+        endif
       else
         call errquit(pname//"invalid theory: "//trim(theory),0,0)
       endif

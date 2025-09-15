@@ -159,9 +159,9 @@ c
 c     Shift eigenvalues
 c
       call gw_shift(dbl_mb(pars%k_evals),dbl_mb(kEref),efermi,
-     $              nbf_ao,pars%nmo,pars%ipol)
+     $              nbf_ao, pars%nmo, pars%ipol)
 
-      call dcopy(nmo*ipol,dbl_mb(kEref),1,dbl_mb(kEmod),1)
+      call dcopy(nmo*ipol, dbl_mb(kEref), 1, dbl_mb(kEmod), 1)
 c
       if(.not.(ga_create( GWMT ,nri,pars%nmo,'sols',nri,0,
      $    pars%g_sols)))
@@ -183,7 +183,7 @@ c
  9021 format(/,2x,"*** G",I2,"W",I2)     
 
       call gw_shift(dbl_mb(kemod),dbl_mb(pars%k_evals),-efermi,
-     $              pars%nmo,nbf_ao,pars%ipol)
+     $              pars%nmo, nbf_ao, pars%ipol)
       if(.not.movecs_write(pars%rtdb, ao_bas_han, movecs_out, 'dft',
      $                       'W vals',nbf_ao,ipol,(/pars%nmo,pars%nmo/),
      $                       dbl_mb(pars%k_occ), nbf_ao,
@@ -219,6 +219,8 @@ c
 c      if (eviter.eq.0 .and. pars%ncap) then
 c        call dcopy(nmo*ipol,dbl_mb(kEmod),1,dbl_mb(kEref),1)
 c      endif
+
+      call dcopy(nmo*ipol,dbl_mb(kEmod),1,dbl_mb(kEref),1)
 c
 c     Obtain Screened Coulomb matrices on imaginary axis
 c
@@ -289,7 +291,7 @@ c
           efermi_new(i) = gw_efermi(dbl_mb(lSize),pars%nocc(i))
         enddo
         call gw_shift(dbl_mb(kEnew),dbl_mb(kemod),efermi_new,
-     $                pars%nmo,pars%nmo,pars%ipol)
+     $                pars%nmo, pars%nmo, pars%ipol)
         efermi(:) = efermi(:) + efermi_new(:)
         call dcopy(pars%ipol*nmo,dbl_mb(kemod),1,dbl_mb(kEnew),1)
 

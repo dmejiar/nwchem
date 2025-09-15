@@ -114,13 +114,25 @@ c
       if(.not.rtdb_get(pars%rtdb,'bse:nroots',mt_int,1,pars%nroots))
      &  call errquit(pname//'could not read from rtdb',5,RTDB_ERR)
 
+      ! Starting space size
+      if(.not.rtdb_get(pars%rtdb,'bse:nspace',mt_int,1,pars%nspace))
+     &  call errquit(pname//'could not read from rtdb',119,RTDB_ERR)
+
       ! Maximum Number of roots
       if(.not.rtdb_get(pars%rtdb,'bse:nmax',mt_int,1,pars%nmax))
      &  call errquit(pname//'could not read from rtdb',5,RTDB_ERR)
-      if (pars%nmax.le.2*pars%nroots) then
-        call errquit(pname//'maxroots should be at least 2*nroots',
-     $               119,INPUT_ERR)
+      if ((pars%nmax.le.5*pars%nroots).and.pars%davidson) then
+        call errquit(pname//'maxroots should be at least 5*nroots',
+     $               126,INPUT_ERR)
       endif
+      if((pars%nroots*pars%nspace.gt.pars%nmax)) then
+        call errquit(pname//'maxroots should be at least nroots*nspace',
+     $               130, INPUT_ERR)
+      endif
+   
+      ! Maximum number of iterations
+      if(.not.rtdb_get(pars%rtdb,'bse:maxiter',mt_int,1,pars%maxiter))
+     &  call errquit(pname//'could not read from rtdb',135,RTDB_ERR)
 
       ! Get some info from DFT module
       call dft_rdinput(pars%rtdb)

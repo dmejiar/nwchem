@@ -36,6 +36,7 @@
           case(xc_family_gga,xc_family_hyb_gga,xc_family_mgga,
      $         xc_family_hyb_mgga)
             nwchem_libxc_family = .true.
+            return
           case default
             nwchem_libxc_family = .false.
           end select            
@@ -43,6 +44,7 @@
           select case(libxc_family(ifunc))
           case(xc_family_mgga,xc_family_hyb_mgga)
             nwchem_libxc_family = .true.
+            return
           case default
             nwchem_libxc_family = .false.
           end select
@@ -50,6 +52,7 @@
           nwchem_libxc_family = iand(libxc_flags(ifunc),
      $                           xc_flags_needs_laplacian).eq.
      $                           xc_flags_needs_laplacian
+          if (nwchem_libxc_family) return
         elseif (family.eq."exc") then
           nwchem_libxc_family = iand(libxc_flags(ifunc),
      $                           xc_flags_have_exc).eq.

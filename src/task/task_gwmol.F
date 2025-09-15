@@ -67,9 +67,9 @@ c
 c
 c     Restrict to DFT for now (SCF could also be used)
 c
-      if (.not.inp_compare(.false.,'dft',theory))
-     &  call errquit('task_gwmol: GW is only implemented for DFT', 0,
-     &                INPUT_ERR)
+c      if (.not.inp_compare(.false.,'dft',theory))
+c     &  call errquit('task_gwmol: GW is only implemented for DFT', 0,
+c     &                INPUT_ERR)
 c
       if (rtdb_get(rtdb, 'dft:rodft', mt_log, 1, rodft))
      &  call errquit('task_gwmol: GW is not implemented for RODFT', 0,

@@ -52,6 +52,7 @@ HEADERS = xc.fh xc_vdw.fh xc_params.fh xc_hcth.fh
 	xc_xm11.o xc_xmn12.o xc_xmn15.o \
 	xc_csogga.o\
 	xc_cm11.o \
+	xc_xf3.o \
 	steric_energy.o\
 	xc_3rd_deriv.o xc_xpw86.o xc_xb86b.o xc_xdm.o \
 	ts_eval_fnl.o ts_tf.o ts_vw.o xc_xn12.o \

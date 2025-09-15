@@ -176,7 +176,8 @@ CDEC$ NOSWP
                 dtansin = darcsinh(s)
               else
                 tansin = dtanh(s)*arcsinh(s)
-                dtansin = arcsinh(s)/dcosh(s)**2 + dtanh(s)*darcsinh(s)
+                dtansin = arcsinh(s)*(1d0-dtanh(s)**2) + 
+     $                    dtanh(s)*darcsinh(s)
               endif
 
               denom = 1d0 + beta*tansin
@@ -194,7 +195,7 @@ CDEC$ NOSWP
               if (s.gt.24d0) then
                 d2tansin = d2arcsinh(s)
               else
-                d2tansin = (darcsinh(s)-tansin)*2d0/dcosh(s)**2 +
+                d2tansin = (darcsinh(s)-tansin)*2d0*(1d0-dtanh(s)**2)+
      &                     dtanh(s)*d2arcsinh(s)
               endif
               d2asymp = alpha*omz*(2d0 + s)/ops**2
@@ -209,11 +210,11 @@ CDEC$ NOSWP
               if (s.gt.30d0) then
                 d3tansin = d3arcsinh(s)
               else
-                d3tansin = 3d0*d2arcsinh(s)/dcosh(s)**2 - 
-     &                     4d0*darcsinh(s)*dtanh(s)/dcosh(s)**2 + 
+                d3tansin = 3d0*d2arcsinh(s)*(1d0-dtanh(s)**2)- 
+     &                     4d0*darcsinh(s)*dtanh(s)*(1d0-dtanh(s)**2) + 
      &                     dtanh(s)*d3arcsinh(s) -
-     &                     2d0*dtansin/dcosh(s)**2 +
-     &                     4d0*tansin*dtanh(s)/dcosh(s)**2
+     &                     2d0*dtansin*(1d0-dtanh(s)**2) +
+     &                     4d0*tansin*dtanh(s)*(1d0-dtanh(s)**2)
               endif
               d3asymp = -alpha*omz*(3d0 + s)/ops**3
               d3denom = beta*d3tansin
@@ -314,7 +315,8 @@ c
                 dtansin = darcsinh(s)
               else
                 tansin = dtanh(s)*arcsinh(s)
-                dtansin = arcsinh(s)/dcosh(s)**2 + dtanh(s)*darcsinh(s)
+                dtansin = arcsinh(s)*(1d0-dtanh(s)**2) + 
+     $                    dtanh(s)*darcsinh(s)
               endif
 
               denom = 1d0 + beta*tansin
@@ -329,9 +331,9 @@ c
               if (s.gt.30d0) then
                 d2tansin = d2arcsinh(s)
               else
-                d2tansin = 2d0*darcsinh(s)/dcosh(s)**2 +
+                d2tansin = 2d0*darcsinh(s)*(1d0-dtanh(s)**2) +
      &                     dtanh(s)*d2arcsinh(s) -
-     &                     2d0*tansin/dcosh(s)**2
+     &                     2d0*tansin*(1d0-dtanh(s)**2)
               endif
               d2asymp = alpha*omz*(2d0 + s)/ops**2
               d2denom = beta*d2tansin
@@ -344,11 +346,11 @@ c
               if (s.gt.30d0) then
                 d3tansin = d3arcsinh(s)
               else
-                d3tansin = 3d0*d2arcsinh(s)/dcosh(s)**2 - 
-     &                     4d0*darcsinh(s)*dtanh(s)/dcosh(s)**2 + 
+                d3tansin = 3d0*d2arcsinh(s)*(1d0-dtanh(s)**2)-
+     &                     4d0*darcsinh(s)*dtanh(s)*(1d0-dtanh(s)**2)+ 
      &                     dtanh(s)*d3arcsinh(s) -
-     &                     2d0*dtansin/dcosh(s)**2 +
-     &                     4d0*tansin*dtanh(s)/dcosh(s)**2
+     &                     2d0*dtansin*(1d0-dtanh(s)**2) +
+     &                     4d0*tansin*dtanh(s)*(1d0-dtanh(s)**2)
               endif
               d3asymp = -alpha*omz*(3d0 + s)/ops**3
               d3denom = beta*d3tansin
@@ -439,7 +441,8 @@ c
                 dtansin = darcsinh(s)
               else
                 tansin = dtanh(s)*arcsinh(s)
-                dtansin = arcsinh(s)/dcosh(s)**2 + dtanh(s)*darcsinh(s)
+                dtansin = arcsinh(s)*(1d0-dtanh(s)**2) + 
+     $                    dtanh(s)*darcsinh(s)
               endif
 
               denom = 1d0 + beta*tansin
@@ -455,9 +458,9 @@ c
               if (s.gt.30d0) then
                 d2tansin = d2arcsinh(s)
               else
-                d2tansin = 2d0*darcsinh(s)/dcosh(s)**2 +
+                d2tansin = 2d0*darcsinh(s)*(1d0-dtanh(s)**2) +
      &                     dtanh(s)*d2arcsinh(s) -
-     &                     2d0*tansin/dcosh(s)**2
+     &                     2d0*tansin*(1d0-dtanh(s)**2)
               endif
               d2asymp = alpha*omz*(2d0 + s)/ops**2
               d2denom = beta*d2tansin
@@ -471,11 +474,11 @@ c
               if (s.gt.30d0) then
                 d3tansin = d3arcsinh(s)
               else
-                d3tansin = 3d0*d2arcsinh(s)/dcosh(s)**2 - 
-     &                     4d0*darcsinh(s)*dtanh(s)/dcosh(s)**2 + 
+                d3tansin = 3d0*d2arcsinh(s)*(1d0-dtanh(s)**2) - 
+     &                     4d0*darcsinh(s)*dtanh(s)*(1d0-dtanh(s)**2)+ 
      &                     dtanh(s)*d3arcsinh(s) -
-     &                     2d0*dtansin/dcosh(s)**2 +
-     &                     4d0*tansin*dtanh(s)/dcosh(s)**2
+     &                     2d0*dtansin/(1d0-dtanh(s)**2) +
+     &                     4d0*tansin*dtanh(s)*(1d0-dtanh(s)**2)
               endif
               d3asymp = -alpha*omz*(3d0 + s)/ops**3
               d3denom = beta*d3tansin
