@@ -1,5 +1,5 @@
       subroutine bse_davidson(pars)
-
+      use, intrinsic :: ieee_arithmetic
       implicit none
 
 #include "global.fh"
@@ -30,6 +30,8 @@
       integer ipole,jpole,itrial,imo,amo,idavidson
       logical found,dohartree,stat,debug
       double precision,external :: dasum
+      double precision snan
+      snan = IEEE_VALUE(1d0, IEEE_SIGNALING_NAN)
 
       !debug = pars%me.eq.0
       debug = .false.
@@ -72,6 +74,18 @@
       if(.not.ma_push_get(mt_dbl,nri**2,'W',lW,kW))
      &  call errquit(pname//'failed to allocate W',0,MA_ERR)
 
+      if (debug) then
+        call dcopy(totnpoles,snan,0,dbl_mb(k_dia),1)
+        call dcopy(npoles,snan,0,dbl_mb(k_omega),1)
+        call dcopy(npoles,snan,0,dbl_mb(k_r),1)
+        call dcopy(maxpoles*pars%nmax,snan,0,dbl_mb(k_tmp1),1)
+        call dcopy(maxpoles*pars%nmax,snan,0,dbl_mb(k_tmp2),1)
+        call dcopy(maxpoles*pars%nmax,snan,0,dbl_mb(k_tmp3),1)
+        call dcopy(maxpoles*pars%nmax,snan,0,dbl_mb(k_tmp4),1)
+        call dcopy(ntrials*ntrials,snan,0,dbl_mb(vkv),1)
+        call dcopy(nri*nri,snan,0,dbl_mb(kW),1)
+      endif
+
       ! Get map for irreg array
       pars%nblocks = ga_nnodes()
       do inode=0,ga_nnodes()-1
@@ -101,11 +115,19 @@
      $                ga_duplicate(g_x,g_s,'s').and. 
      $                ga_duplicate(g_x,g_ks,'ks').and. 
      $                ga_duplicate(g_x,g_mks,'mks').and. 
-     $                ga_duplicate(g_x,g_w,'w').and. 
-     $                ga_duplicate(g_x,g_kw,'kw').and. 
-     $                ga_duplicate(g_x,g_mkw,'mkw').and. 
      $                ga_duplicate(g_x,g_trials,'trials')
       if(.not.stat) call errquit('ga create failed',103,GA_ERR)
+
+      ! W, K*W, and M*K*W are fixed to nroots columns
+      g_w = ga_create_handle()
+      call ga_set_data(g_w, 2, (/npoles, pars%nroots/), mt_dbl)
+      call ga_set_array_name(g_w, 'w')
+      call ga_set_tiled_irreg_proc_grid(g_w, int_mb(k_map),
+     $       (/pars%nblocks, 1/), (/ga_nnodes(), 1/))
+      stat = ga_allocate(g_w)
+      stat = stat .and. ga_duplicate(g_w, g_kw, 'kw') .and. 
+     $                  ga_duplicate(g_w, g_mkw, 'mkw')
+      if(.not.stat) call errquit('Could not allocate g_w', 0, GA_ERR)
 
       g_wia = ga_create_handle()
       call ga_set_data(g_wia,1,npoles,mt_dbl)
@@ -115,6 +137,21 @@
       stat = stat.and.ga_allocate(g_wia)
       if(.not.stat) call errquit('ga create failed',110,GA_ERR)
 
+      if(debug) then
+        call ga_fill(g_x, snan)
+        call ga_fill(g_y, snan)
+        call ga_fill(g_ym, snan)
+        call ga_fill(g_s, snan)
+        call ga_fill(g_ks, snan)
+        call ga_fill(g_mks, snan)
+        call ga_fill(g_w, snan)
+        call ga_fill(g_kw, snan)
+        call ga_fill(g_mkw, snan)
+        call ga_fill(g_wia, snan)
+      endif
+
+      ! Initialize trials to 0
+      call ga_zero(g_trials)
 
       ! obtain "old" eigenvalue difference to build W
       do isp=1,pars%ipol
@@ -149,14 +186,14 @@
       do isp=1,pars%ipol
         off1 = (isp-1)*pars%npoles(1)
         lSize = (isp-1)*maxpoles
-        call nga_put(g_wia,pars%ovlo(isp)+off1,pars%ovhi(isp)+off1,
-     $           dbl_mb(k_dia+lSize),pars%ovhi(isp)-pars%ovlo(isp)+1)
+        call nga_put(g_wia, pars%ovlo(isp)+off1, pars%ovhi(isp)+off1,
+     $           dbl_mb(k_dia+lSize), pars%ovhi(isp)-pars%ovlo(isp)+1)
       enddo
 
       ! Get guess vectos
       if(pars%me.eq.0) 
-     $  call bse_davidson_guess(pars,dbl_mb(k_dia),g_trials,npoles,
-     $                          ntrials,pars%nroots)
+     $  call bse_davidson_guess(pars, dbl_mb(k_dia), g_trials, npoles,
+     $                          ntrials, pars%nroots)
       call ga_brdcst(mt_dbl,dbl_mb(k_dia),
      $                           ma_sizeof(mt_dbl,npoles,mt_byte),0)
       do isp=1,pars%ipol
@@ -187,8 +224,8 @@
     1 continue
 
       ! K-orthogonalization
-      call bse_davidson_kvec(pars,g_trials,g_wia,g_x,npoles,
-     $                       ntrials,pars%singlet,1d0)
+      call bse_davidson_kvec(pars, g_trials, g_wia, g_x, npoles,
+     $                       ntrials, pars%singlet, 1d0)
 
       call nga_access_block_grid(g_x, (/pars%me,0/), k_x, myld)
       call nga_access_block_grid(g_trials, (/pars%me,0/),k_trials,myld)
@@ -401,8 +438,8 @@
 
 
         ! K-orthogonalization
-        call bse_davidson_kvec(pars,g_w,g_wia,g_kw,npoles,
-     $                         ndim,pars%singlet,1d0)
+        call bse_davidson_kvec(pars, g_w, g_wia, g_kw, npoles,
+     $                         ndim, pars%singlet, 1d0)
         call bse_davidson_kvec(pars,g_kw,g_wia,g_mkw,npoles,
      $                         ndim,.false.,-1d0)
 

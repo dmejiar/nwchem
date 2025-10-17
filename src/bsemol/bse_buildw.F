@@ -57,7 +57,9 @@ C
       call ga_dgop(1038,w,sizepi,'+')
 
       !Factorize dieletric matrix for further use
-      call dpftrf('n','l',nri,w,info)
+      call dpftrf('n','l', nri, w, info)
+      if(info.ne.0)
+     &  call errquit(pname//'Failed to decompose dielectric',info,0)
       
       !Deallocate
       deallocate(factor,stat=alloc)

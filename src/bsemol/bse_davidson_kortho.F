@@ -10,7 +10,7 @@
       logical first
       integer npoles,n,m
 
-      integer l_work,k_work,info,i,j,k
+      integer l_work,k_work,info,i,j,k,lSize
 
       double precision rdum
       double precision v(npoles,n),kv(npoles,n),mkv(npoles,n)
@@ -23,13 +23,14 @@
 
       ! Allocate work field
       call dsyev('v','l',n,vkv,n,eig,rdum,-1,info)
-      if(.not.ma_push_get(mt_dbl,int(rdum),'work',l_work,k_work))
+      lSize = rdum
+      if(.not.ma_push_get(mt_dbl,lSize,'work',l_work,k_work))
      $  call errquit('bse_kortho: failed to allocate work',199,MA_ERR)
 
       ! Diagonalize matrix
-      call dsyev('v','l',n,vkv,n,eig,dbl_mb(k_work),int(rdum),info)
+      call dsyev('v','l',n,vkv,n,eig,dbl_mb(k_work),lSize,info)
       if (info.ne.0)
-     $  call errquit("bse_davidson_kortho: diago failed",0,0)
+     $  call errquit("bse_davidson_kortho: diago failed",info,0)
 
       ! Deallocate field
       if (.not.ma_chop_stack(l_work))

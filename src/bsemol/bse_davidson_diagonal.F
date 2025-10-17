@@ -50,6 +50,7 @@
 
         ! Eigenvalue differences
         call ga_distribution(pars%g_eriov(isp),pars%me,ilo,ihi,jlo,jhi)
+        if(jlo.gt.jhi) continue
         call dcopy(jhi-jlo+1,wia(1,isp),1,temp,1)
 
         ! Screened Coulomb from A
@@ -74,7 +75,7 @@
      $                          dbl_mb(ktmp+(ipole-jlo)*nri),1)
           enddo
           call nga_acc(pars%g_apb,jlo+off1,jhi+off1,temp,jhi-jlo+1,-1d0)
-          call nga_acc(pars%g_amb,jlo+off1,jhi+off1,temp,jhi-jlo+1,1d0)
+          call nga_acc(pars%g_amb,jlo+off1,jhi+off1,temp,jhi-jlo+1, 1d0)
           call ga_release(pars%g_wov(isp),ilo,ihi,jlo,jhi)
         endif
 
