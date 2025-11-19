@@ -1426,8 +1426,8 @@ ifeq ($(TARGET),MACX64)
         endif
 
         ifdef  USE_ASAN
-            FOPTIONS += -fsanitize=address -fsanitize-recover=address
-            LDOPTIONS += -fsanitize=address -fsanitize-recover=address
+            FOPTIONS += -fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer
+            LDOPTIONS += -fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer
         endif
         ifdef OPENBLAS_USES_OPENMP
             LDOPTIONS += -fopenmp
@@ -2212,8 +2212,8 @@ ifneq ($(TARGET),LINUX)
 
         ifeq ($(_FC),gfortran)
             ifdef  USE_ASAN
-                FOPTIONS += -fsanitize=address -fsanitize-recover=address
-                LDOPTIONS += -fsanitize=address -fsanitize-recover=address
+                FOPTIONS += -fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer
+                LDOPTIONS += -fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer
             endif
             ifdef  USE_FPE
                 ifeq ($(USE_FLANG),1)
