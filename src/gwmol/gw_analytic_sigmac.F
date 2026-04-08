@@ -36,9 +36,9 @@ c
         do ipole=jlo,jhi
           omega = omegain - Eold(imo) + omegam(ipole)
           w = dbl_mb(adrWMN + (ipole-jlo)*ld + imo - 1)
-          denom = omega**2 + eta
+          denom = omega**2 + eta3**2
           resp(1) = resp(1) + w*omega/denom
-          resp(2) = resp(2) + w*(eta-omega**2)/denom**2
+          resp(2) = resp(2) + w*(eta3**2-omega**2)/denom**2
           resp(3) = resp(3) + w*2d0*omega*(omega**2-eta3)/denom**3
         enddo
       enddo
@@ -52,9 +52,9 @@ c
         do ipole=jlo,jhi
           omega = omegain - Eold(imo) - omegam(ipole)
           w = dbl_mb(adrWMN + (ipole-jlo)*ld + imo - 1)
-          denom = omega**2 + eta
+          denom = omega**2 + eta3**2
           resm(1) = resm(1) + w*omega/denom
-          resm(2) = resm(2) + w*(eta-omega**2)/denom**2
+          resm(2) = resm(2) + w*(eta3**2-omega**2)/denom**2
           resm(3) = resm(3) + w*2d0*omega*(omega**2-eta3)/denom**3
         enddo
       enddo

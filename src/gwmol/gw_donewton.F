@@ -6,6 +6,7 @@ C     JCTC 17, 7504
 C
 
       implicit none
+#include "stdio.fh"
       integer          :: iter
       logical          :: bracket
       double precision :: xin, xout, xlow, xupp
@@ -19,6 +20,11 @@ C
       step = z*fx
       pole = .false.
 
+
+#ifdef GWDEBUG
+ 1000 format("Z: ",F12.8,", FX: ",F12.8)
+      write(LuOut, 1000) z, fx
+#endif
       !
       ! when dfx is positive, we are sitting on a pole
       ! perhaps we should do somehting to get out of it
@@ -30,7 +36,7 @@ C
       !
       !take full newton step for large enough z
       !
-      if (z.gt.0.6d0 .and. z.le.1d0 ) then 
+      if (z.gt.0.7d0 .and. z.le.1d0 ) then 
         if (iter.eq.1) then
           xout = xin + 0.2d0*step
         else
@@ -54,8 +60,8 @@ C
       !
       ! Take an scaled Newton step for small Z
       !
-      elseif (z.gt.0.1d0) then
-        if (iter.eq.1) then
+      elseif (z.gt.0.1d0 .and. z.le.0.7d0) then
+        if (iter.le.5) then
           xout = xin + 0.10d0*step
         else 
           xout = xin + 0.30d0*step
@@ -64,7 +70,7 @@ C
       !
       ! If Z is greater than 1.0 or very small we have to suspect
       ! numerical issues with the current derivative. Take a scaled
-      ! steepest decent step 
+      ! steepest descent step 
       !
       else
 c        xout = xin + radius*fx

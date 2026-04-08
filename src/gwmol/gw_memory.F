@@ -26,7 +26,7 @@ c
 c
       integer ga_mem, ma_mem, totmopairs, isp
       integer stack_mem, heap_mem
-      integer mynpoles, maxnpoles, mynmo, maxqp
+      integer mynpoles, maxnpoles, mynmo, maxqp, npoles
       integer heap_buildiw,stack_buildiw,ga_buildiw,extramem_buildiw
       integer heap_buildrn,stack_buildrn,ga_buildrn,extramem_buildrn
       integer stack_scaleig,extramem_scaleig,extramem,nri
@@ -185,15 +185,20 @@ c
       else
 
         if (pars%me.eq.0) write(luout,9040) 
-        ga_mem = (totmopairs + sum(pars%npoles(1:pars%ipol)))*nbf_cd
-        ga_mem = ga_mem + sum(pars%npoles(1:pars%ipol))**2
+
+        npoles = sum(pars%npoles(1:pars%ipol))
+        ga_mem = (totmopairs + 2*npoles)*nbf_cd
+        ga_mem = ga_mem + npoles**2 + 2*npoles
 
         heap_mem = 10*pars%ipol*pars%nmo +
      $           pars%ipol*maxnpoles +
      $           pars%ipol*mynpoles
         ga_mem = ga_mem/pars%nprocs
-        stack_mem = sum(pars%npoles(1:pars%ipol))**2
+        stack_mem = 6*npoles + 4*npoles**2/pars%nprocs
         extramem = stack_mem
+        stack_mem = stack_mem + heap_mem
+        heap_mem = 0
+
      
         if (pars%me.eq.0) write(luout,9030) ga_mem*dbl2mb,
      $                   stack_mem*dbl2mb,heap_mem*dbl2mb,
