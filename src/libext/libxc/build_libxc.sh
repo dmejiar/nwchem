@@ -9,11 +9,12 @@ check_tgz() {
     echo $myexit
 }
 if [ $# -eq 0 ];  then
-    VERSION=7.0.0
+    VERSION=7.1.2
 else
     VERSION=$1
 fi
 VERSION_MAJOR=$(echo $VERSION | cut -d . -f 1)
+VERSION_MINOR=$(echo $VERSION | cut -d . -f 2)
 if [[ "$VERSION_MAJOR" -lt 4 ]]; then
     echo
     echo "LIBXC unsupported version " "$VERSION"
@@ -94,8 +95,11 @@ if ((CMAKE_VER_MAJ < ${CMAKE_VER_REQ_MAJ})) || (((CMAKE_VER_MAJ == ${CMAKE_VER_R
 fi
 
 cd libxc
-ls -lrt ../mylibxc_cmake.patch
-patch -p1  < ../mylibxc_cmake.patch
+if [[ "$VERSION_MAJOR" -lt 7 && $CMAKE_VER_MAJ -gt 3 ]]; then
+    patch -p1  < ../cmakev.patch
+fi
+#ls -lrt ../mylibxc_cmake.patch
+#patch -p1  < ../mylibxc_cmake.patch
 # patch pk09 to avoid compiler  memory problems
 #patch -p0 -N < ../pk09.patch
 mkdir -p build
@@ -119,16 +123,41 @@ else
     fcflags=" "
 fi
 rm -rf libxc/build
-if [[ "${USE_HWOPT}" == "n" ]]; then
-    enable_xhost_flag=OFF
-else
-    enable_xhost_flag=ON
+if [[ "$VERSION_MAJOR" -lt 7 || ( "$VERSION_MAJOR" -eq 7 && "$VERSION_MINOR" -lt 1 ) ]]; then
+    if [[ "${USE_HWOPT}" == "n" ]]; then
+	CMAKE_XH=-DENABLE_XHOST=OFF
+    else
+	CMAKE_XH=-DENABLE_XHOST=ON
+    fi
 fi
-
+if [[ "$VERSION_MAJOR" -gt 6 ]]; then
+    if command -v pytest >/dev/null 2>&1; then
+	echo "pytest is installed."
+	pytest --version
+    else
+	echo "Installing pytest" >&2
+	python3 -m venv --without-pip venv
+	source venv/bin/activate
+	curl -O https://bootstrap.pypa.io/get-pip.py
+	python3 get-pip.py
+	python -m pip install --upgrade pytest
+	pytest --version
+    fi
+fi
+if [[ "$VERSION_MAJOR" -lt 7 ]]; then
+    CMAKE_3RD=-DDISABLE_KXC=OFF
+else
+    CMAKE_3RD=-DMAXORDER=3
+fi
+if [[ "$VERSION_MAJOR" -lt 6 ]]; then
+    CMAKE_F03=-DENABLE_FORTRAN03=ON
+fi
 $CMAKE -E env CFLAGS="$cflags" LDFLAGS="$ldflags" FCFLAGS="$fcflags" FFLAGS="$fcflags" \
-$CMAKE  -DCMAKE_INSTALL_PREFIX=${NWCHEM_TOP}/src/libext/libxc/install -DCMAKE_C_COMPILER=$CC -DENABLE_FORTRAN=ON -DCMAKE_Fortran_COMPILER=$FC -DDISABLE_KXC=OFF \
--DENABLE_XHOST="$enable_xhost_flag" \
--DENABLE_FORTRAN03=ON \
+$CMAKE  -DCMAKE_INSTALL_PREFIX=${NWCHEM_TOP}/src/libext/libxc/install -DCMAKE_C_COMPILER=$CC -DENABLE_FORTRAN=ON -DCMAKE_Fortran_COMPILER=$FC \
+ $CMAKE_3RD \
+-DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF \
+ $CMAKE_XH \
+ $CMAKE_F03 \
 -DCMAKE_INSTALL_LIBDIR="lib" -DCMAKE_BUILD_TYPE=Release ..
 
 make -j4 | tee make.log
@@ -139,4 +168,7 @@ if [[ $(uname -s) == "Linux" ]]; then
 fi
 ln -sf  ../../install/lib/libxc.a ../../install/lib/libnwc_xc.a
 ln -sf  ../../install/lib/libxcf03.a ../../install/lib/libnwc_xcf03.a
+if [[ "$VERSION_MAJOR" -gt 6 ]]; then
+    deactivate
+fi
 

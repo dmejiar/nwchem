@@ -1,4 +1,6 @@
 name: NWChem_Release_Tar
+permissions:
+  contents: write
 
 on:
   workflow_dispatch:
@@ -31,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           show-progress:
           fetch-depth: 200
@@ -73,13 +75,13 @@ jobs:
         run: |
           ls -lrt ${{ env.tmpdir_name }}/*tar*
       - name: Upload artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nwchem-tarball
           path: ${{ env.tmpdir_name }}/*tar*
       - if: github.event.inputs.release_version == 'nightly'
         name: Nightly
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           prerelease: true
           name: nightly
@@ -88,7 +90,7 @@ jobs:
           fail_on_unmatched_files: true
       - if: github.event.inputs.release_version != 'nightly'
         name: Release 
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           prerelease: true
           draft: true

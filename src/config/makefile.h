@@ -287,6 +287,14 @@ endif
 # their header files are needed for dependency analysis of
 # other NWChem modules
 ifdef USE_INTERNALBLAS
+    ifneq ($(or $(BLASOPT),$(LAPACK_LIB),$(BLAS_LIB)),)
+        $(info     )
+        $(info You must unset)
+        $(info BLASOPT ,LAPACK_LIB and BLAS_LIB)
+        $(info when using USE_INTERNALBLAS )
+        $(info )
+        $(error )
+    endif
     NW_CORE_SUBDIRS += blas lapack
 endif
 ifdef USE_LIBXC
@@ -294,6 +302,10 @@ ifdef USE_LIBXC
 endif
 
 ifdef USE_TBLITE
+    NW_CORE_SUBDIRS += libext
+endif
+
+ifdef USE_DFTD4
     NW_CORE_SUBDIRS += libext
 endif
 
@@ -305,10 +317,10 @@ ifdef BUILD_OPENBLAS
     NW_CORE_SUBDIRS += libext
 
     #bail out if BLASOPT or LAPACK_LIB or BLAS_LIB are defined by user
-    ifneq ($(or $(BLASOPT),$(LAPACK_LIB),$(BLAS_LIB)),)
+    ifneq ($(or $(BLASOPT),$(LAPACK_LIB),$(BLAS_LIB),$(USE_INTERNALBLAS)),)
         $(info     )
         $(info You must unset)
-        $(info BLASOPT ,LAPACK_LIB and BLAS_LIB)
+        $(info USE_INTERNALBLAS, BLASOPT ,LAPACK_LIB and BLAS_LIB)
         $(info when using BUILD_OPENBLAS )
         $(info )
         $(error )
@@ -376,9 +388,23 @@ ifdef BUILD_ELPA
 #   endif
 
     ifndef SCALAPACK_SIZE
-        SCALAPACK_SIZE=8
+        SCALAPACK_SIZE = 8
     endif
-    ELPA=-L$(NWCHEM_TOP)/src/libext/lib -lnwc_elpa -I$(NWCHEM_TOP)/src/libext/include/elpa/modules
+    ELPA := -L$(NWCHEM_TOP)/src/libext/lib -lnwc_elpa -I$(NWCHEM_TOP)/src/libext/include/elpa/modules
+    ifdef ELPA_NVIDIA
+       ifdef CUDA_ROOT
+          ELPA := $(ELPA) -L$(CUDA_ROOT)/lib64
+#          ELPA := $(ELPA) $(shell PKG_CONFIG_PATH=$(NWCHEM_TOP)/src/libext/lib/pkgconfig pkg-config --libs-only-l elpa | sed -e 's/-lelpa//g')
+	  ELPA := $(ELPA) -lcusolver -lcudart -lcublasLt -lcublas
+          ELPA := $(ELPA) -lstdc++
+       else
+          $(info )
+          $(info please set the env. variable CUDA_ROOT)
+          $(info when compiling ELPA for Nvidia GPUs)
+          $(info )
+          $(error )
+       endif
+    endif
 endif
 
 
@@ -1357,7 +1383,11 @@ ifeq ($(TARGET),MACX64)
 
         ifdef USE_OPENMP
             FOPTIONS  += -fopenmp
-            LDOPTIONS += -fopenmp
+            ifneq (,$(wildcard ${HOMEBREW_PREFIX}/opt/libomp/lib/libomp.a))
+                LDOPTIONS += -L$(HOMEBREW_PREFIX)/opt/libomp/lib -lomp
+            else
+                LDOPTIONS += -fopenmp
+            endif
         endif
 
         ifeq ($(USE_FLANG),1)
@@ -1426,6 +1456,7 @@ ifeq ($(TARGET),MACX64)
         endif
 
         ifdef  USE_ASAN
+            COPTIONS += -fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer
             FOPTIONS += -fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer
             LDOPTIONS += -fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer
         endif
@@ -3682,6 +3713,12 @@ endif
 
 
 #TBLITE
+ifdef USE_DFTD4
+    ifdef USE_TBLITE
+        $(error USE_DFTD4 and USE_TBLITE cannot be enabled together)
+    endif
+endif
+
 ifeq ("$(wildcard $(NWCHEM_TOP)/src/config/NWCHEM_CONFIG)","")
     ifeq (xtb, $(findstring xtb, $(NWCHEM_MODULES)))
         MODULES_HAS_XTB=Y
@@ -3708,6 +3745,15 @@ ifdef USE_TBLITE
         EXTRA_LIBS += -ltblite -ltoml-f -ldftd4 -lmulticharge -ls-dftd3 -lmctc-lib
     endif
     EXTRA_LIBS += $(LAPACK_LIB) $(BLASOPT)
+endif
+
+# DFTD4 integration developed with assistance from OpenAI Codex
+# Reviewed, validated, and tested by MPH
+ifdef USE_DFTD4
+    DEFINES += -DUSE_DFTD4
+    DFTD4_LIBDIR = $(NWCHEM_TOP)/src/libext/dftd4/install/lib
+    EXTRA_LIBS += -L$(LIBDIR) -lnwc_dftd4 -L$(DFTD4_LIBDIR) \
+                  -ldftd4 -lmulticharge -lmctc-lib -lmstore
 endif
 
 # CUDA

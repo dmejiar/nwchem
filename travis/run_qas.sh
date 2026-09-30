@@ -3,7 +3,7 @@
 set -e
 #OpenMPI fixes
     export OMPI_MCA_plm_rsh_agent=ssh
-    export OMPI_MCA_btl=self,tcp
+#    export OMPI_MCA_btl=self,tcp
     export OMPI_MCA_osc=^ucx
 #    export OMPI_MCA_btl_tcp_if_include=lo
 # source env. variables
@@ -136,6 +136,9 @@ fi
 	 cd $TRAVIS_BUILD_DIR/QA && ./runtests.mpi.unix procs $nprocs dft_he2+
 	 cd $TRAVIS_BUILD_DIR/QA && ./runtests.mpi.unix procs $nprocs bas_details
 	 cd $TRAVIS_BUILD_DIR/QA && NWCHEM_BASIS_LIBRARY=${NWCHEM_TOP}/src/basis/libraries.bse/ ./runtests.mpi.unix procs $nprocs adft_he2+
+	 if [[ ! -z "$USE_DFTD4" ]]; then
+	     cd $TRAVIS_BUILD_DIR/QA && ./runtests.mpi.unix procs $nprocs dftd4_fh-nh3_pbe-d4_split_native dftd4_h4o2_b3lyp-d4
+	 fi
 	 if [[ ! $(grep -i prop $TRAVIS_BUILD_DIR/src/stubs.F| awk '/prop_input/') ]]; then
 	     cd $TRAVIS_BUILD_DIR/QA && ./runtests.mpi.unix procs $nprocs prop_mep_gcube
 	 fi
@@ -198,6 +201,11 @@ fi
 	   if [[ ! -z "$USE_LIBXC" ]] || [[ ! -z "$LIBXC_INCLUDE" ]]; then
 	       cd $TRAVIS_BUILD_DIR/QA && ./runtests.mpi.unix procs $nprocs libxc_he2+
 	       cd $TRAVIS_BUILD_DIR/QA && ./runtests.mpi.unix procs $nprocs libxc_scanl
+	       # check for availability of 3rd deriv
+	       PATH=${NWCHEM_TOP}/src/libext/libxc/install/bin:$PATH
+	       if (xc-info  1|grep ' third derivative' >& /dev/null) ; then
+		   cd $TRAVIS_BUILD_DIR/QA && ./runtests.mpi.unix procs $nprocs libxc_tddftgrad_h2
+	       fi
 	   fi
 	   if [[ ! -z "$BUILD_ELPA" ]]; then
 	       cd $TRAVIS_BUILD_DIR/QA && ./runtests.mpi.unix procs $nprocs dft_siosi3_elpa

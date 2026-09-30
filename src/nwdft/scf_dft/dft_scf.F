@@ -186,12 +186,12 @@ c     vdw contrib
       double precision dum
       logical xc_chkdispauto
       external xc_chkdispauto
-      logical disp
+      logical disp,dftd4
 c
 c     == zora related ==
       logical dft_zora_read, dft_zora_write, dft_zora_inquire_file
       external dft_zora_read, dft_zora_write, dft_zora_inquire_file
-      character*255 zorafilename
+      character*(nw_max_path_len) zorafilename
       integer g_zora_scale_sf(2)
       double precision ener_scal
       integer icalczora
@@ -200,7 +200,7 @@ c
 c     virtual spectrum
       logical lvspec
       integer owstart(2), owend(2)
-      character*255 vspecfilename
+      character*(nw_max_path_len) vspecfilename
 c
 c     timings 
       double precision time1,time2
@@ -578,6 +578,11 @@ c
 c
       if(disp.or.xc_chkdispauto())
      &      call xc_vdw(rtdb,geom,Edisp,dum,'energy')
+#ifdef USE_DFTD4
+      if (.not.rtdb_get(rtdb,'dft:dftd4',mt_log,1,dftd4))
+     &   dftd4=.false.
+      if (dftd4) call xc_dftd4(rtdb,geom,Edisp,dum,'energy')
+#endif
 c     
 c     == scf energy convergence criterion ==
       if (.not. ga_duplicate(g_fock, g_tmp, 'tmp matrix'))

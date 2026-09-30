@@ -46,7 +46,7 @@ fi
 	    fi
 #  HOMEBREW_NO_AUTO_UPDATE=1 brew cask uninstall oclint || true  
 	    #  HOMEBREW_NO_INSTALL_CLEANUP=1  HOMEBREW_NO_AUTO_UPDATE=1 brew install gcc "$MPI_IMPL" openblas python3 ||true
-	    HOMEBREW_NO_INSTALL_CLEANUP=1  HOMEBREW_NO_AUTO_UPDATE=1 brew reinstall gcc hwloc  gsed grep automake autoconf  ||true
+	    HOMEBREW_NO_INSTALL_CLEANUP=1  HOMEBREW_NO_AUTO_UPDATE=1 brew reinstall gcc hwloc  gsed grep automake ||true
 	    if [[ "$MPI_IMPL" != "build_mpich" ]]; then
 		brew list open-mpi >&  /dev/null ; myexit=$?
 		if [[ $myexit == 0 ]]; then HOMEBREW_NO_INSTALL_CLEANUP=1  HOMEBREW_NO_AUTO_UPDATE=1 brew unlink -q open-mpi ||true ; fi
@@ -218,6 +218,12 @@ if [[ "$os" == "Linux" ]]; then
 	    if [[ "$USE_LIBXC" == "-1" ]]; then
 		pkg_extra+=" libxc-dev"
 	    fi
+	    if [[ "$BUILD_PLUMED" == "1" ]]; then
+		if [[ "${FC}" == *"-"* ]]; then
+		    gccver=$(echo ${FC} | cut -d - -f 2)
+		    pkg_extra+="gcc-${gccver} libstdc++-${gccver}-dev g++-${gccver}"
+		fi
+	    fi
 	    echo "BLAS_ENV is" $BLAS_ENV
 	    if [[ "$BLAS_ENV" == lib*openblas* ]]; then
 		pkg_extra+=" $BLAS_ENV"
@@ -249,10 +255,26 @@ if [[ "$os" == "Linux" ]]; then
 	    $MYSUDO ./llvm.sh $llvm_ver
 	    $MYSUDO apt-get install -y flang-$llvm_ver
 	fi
+	if [[ "$FC" == 'aof' ]]; then
+	    aocc_major=6
+	    aocc_minor=0
+	    aocc_patch=0
+	    aocc_version=${aocc_major}.${aocc_minor}.${aocc_patch}
+	    aocc_dir=aocc-${aocc_major}-${aocc_minor}
+	    aocc_file=aocc-compiler-${aocc_version}
+	    #		curl -sS -LJO https://developer.amd.com/wordpress/media/files/${aocc_dir}.tar
+	    tries=0 ; until [ "$tries" -ge 10 ] ; do \
+			  curl -sS -LJO https://download.amd.com/developer/eula/aocc/${aocc_dir}/${aocc_file}.tar \
+			      && break ; \
+			  tries=$((tries+1)) ; echo attempt no.  $tries    ; sleep 30 ;  done
+	    tar xf ${aocc_file}.tar
+	    ./${aocc_file}/install.sh
+	    source setenv_AOCC.sh
+	fi
 	if [[ "$FC" == "amdflang" ]]; then
 	    $MYSUDO apt-get install -y wget gnupg2 coreutils dialog tzdata
 	    $MYSUDO mkdir --parents --mode=0755 /etc/apt/keyrings
-	    rocm_version=7.0.1
+	    rocm_version=7.2.4
 #	    tries=0 ; until [ "$tries" -ge 10 ] ; do \
 #	    wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor |  $MYSUDO tee /etc/apt/keyrings/rocm.gpg > /dev/null \
 #		&& break ; \
@@ -272,24 +294,25 @@ if [[ "$os" == "Linux" ]]; then
 	    amdclang --version
 	fi
 	if [[ "$FC" == "nvfortran" ]]; then
-	    $MYSUDO apt-get -y install lmod g++ libtinfo5 libncursesw5 lua-posix lua-filesystem lua-lpeg lua-luaossl
-	    nv_major=25
-	    nv_minor=9
+	    #$MYSUDO apt-get -y install lmod g++ libtinfo5 libncursesw5 lua-posix lua-filesystem lua-lpeg lua-luaossl
+	    #$MYSUDO apt-get -y install lmod g++ lua-posix lua-filesystem lua-lpeg lua-luaossl
+	    nv_major=26
+	    nv_minor=5
 	    nverdot="$nv_major"."$nv_minor"
 	    nverdash="$nv_major"-"$nv_minor"
 	    arch_dpkg=`dpkg --print-architecture`
-	    curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | $MYSUDO gpg --yes --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
-            echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/'$arch_dpkg' /' | $MYSUDO tee /etc/apt/sources.list.d/nvhpc.list
-	    echo '*** added hpc-sdk source to /etc/aps ***'
-	    ls -lrt /etc/apt/sources.list.d/ || true
-	    ls -lrt	/etc/apt/sources.list.d/nvhpc.list || true
-	    $MYSUDO cat /etc/apt/sources.list.d/nvhpc.list || true
-	    $MYSUDO apt-get update -y
-	    apt-cache search nvhpc
-	    tries=0 ; until [ "$tries" -ge 10 ] ; do \
-            $MYSUDO apt-get install -y nvhpc-"$nverdash" \
-            && break ; \
-            tries=$((tries+1)) ; echo attempt no.  $tries    ; sleep 30 ;  done
+	    set -ex
+	    fname=nvhpc-"$nverdash"_"$nverdot"-0_"$arch_dpkg".deb
+	    echo fname is $fname
+	    exitcode=0;tries=0 ; until [ "$tries" -ge 3 ] ; do
+                curl -LJO https://developer.download.nvidia.com/hpc-sdk/ubuntu/"$arch_dpkg"/"$fname" && dpkg-deb --info $fname  && break
+		exitcode=-1
+		tries=$((tries+1))
+		sleep 10
+				 done
+	    if [ $exitcode -ne 0 ]; then echo "nvhpc download failed"; exit 123;fi
+            $MYSUDO apt-get install -y ./"$fname"
+	    rm -f ./"$fname"
 	    export PATH=/opt/nvidia/hpc_sdk/Linux_"$arch"/"$nverdot"/compilers/bin:$PATH
 	    export LD_LIBRARY_PATH=/opt/nvidia/hpc_sdk/Linux_"$arch"/"$nverdot"/compilers/lib:$LD_LIBRARY_PATH
 	    $MYSUDO /opt/nvidia/hpc_sdk/Linux_"$arch"/"$nverdot"/compilers/bin/makelocalrc -x

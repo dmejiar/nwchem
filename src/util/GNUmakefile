@@ -158,6 +158,15 @@ endif
 ifeq ($(shell echo $(BLASOPT) |awk '/Accelerate/ {print "Y"; exit}'),Y)
   EXTRA_OBJ += veclib_threads.o
 endif
+
+ifdef USE_OPENMP
+#check if hwloc is present
+   USE_HWLOC = $(shell pkg-config hwloc --exists && echo 'Y')
+   ifeq ($(USE_HWLOC),Y)
+      LIB_DEFINES += -DUSE_HWLOC
+   endif
+endif
+EXTRA_OBJ += utilc_getncpus.o util_getncpus.o util_maxthreads.o
 _PDSYEVR := $(shell [ -e ${NWCHEM_TOP}/src/tools/install/lib/libga.a ] &&  nm ${NWCHEM_TOP}/src/tools/install/lib/libga.a|egrep T |egrep  ga_pdsyevr |awk '/ga_pdsyevr/ {print "Y"}')
 ifeq ($(_PDSYEVR),Y) 
  LIB_DEFINES += -DUSE_PDSYEVR
@@ -235,6 +244,7 @@ endif
               util_strips.o util_poltensor.o  util_mygop.o util_isnan.o \
               util_blasthreads.o util_gpu_affinity.o util_scalapack.o \
               util_norm2.o util_dpofa.o util_dgedi.o util_checkmpirun.o\
+              utilc_fsync.o  \
               $(EXTRA_OBJ)
 ifndef USE_MLIB
               OBJ_OPTIMIZE += icopy.o dsum.o dgefa.o zsum.o
@@ -344,6 +354,11 @@ endif
 
 ifdef USE_NO_WALLTIME
  LIB_DEFINES += -DNO_WALLTIME
+endif
+
+_PDSYEVR := $(shell [ -e ${NWCHEM_TOP}/src/tools/install/lib/libga.a ] &&  nm ${NWCHEM_TOP}/src/tools/install/lib/libga.a|egrep T |egrep  ga_pdsyevr |awk '/ga_pdsyevr/ {print "Y"}')
+ifeq ($(_PDSYEVR),Y)
+ LIB_DEFINES += -DUSE_PDSYEVR
 endif
 
 include ../config/makelib.h
